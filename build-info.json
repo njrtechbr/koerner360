@@ -3,18 +3,18 @@
   "name": "koerner360",
   "description": "Sistema completo de gestão de feedback e avaliações",
   "git": {
-    "commitHash": "3acf6bd7959217b4db69df57e2129e2cc2861155",
-    "commitShort": "3acf6bd",
+    "commitHash": "fd4f33a578df8e3b0e69617c575877a2a48da975",
+    "commitShort": "fd4f33a",
     "branch": "master",
-    "commitDate": "2025-08-14 09:08:53 -0300",
-    "commitMessage": "fix: corrigir data da versão 0.1.0 no changelog",
+    "commitDate": "2025-08-14 09:31:54 -0300",
+    "commitMessage": "feat: implementar sistema completo de versionamento e changelog automático",
     "commitAuthor": "Nereu Jr",
     "tag": "\"\"",
-    "hasUncommittedChanges": true
+    "hasUncommittedChanges": false
   },
   "build": {
-    "date": "2025-08-14T12:31:43.405Z",
-    "timestamp": 1755174703406,
+    "date": "2025-08-14T12:32:00.349Z",
+    "timestamp": 1755174720350,
     "nodeVersion": "v22.18.0",
     "platform": "win32",
     "arch": "x64",
