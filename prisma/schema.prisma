@@ -22,6 +22,7 @@ model Usuario {
   feedbacksRecebidos  Feedback[]  @relation("FeedbackReceptor")
   feedbacksEnviados   Feedback[]  @relation("FeedbackRemetente")
   auditLogs           AuditLog[]
+  changelogs          Changelog[]
   supervisor          Usuario?    @relation("SupervisorAtendente", fields: [supervisorId], references: [id])
   supervisoes         Usuario[]   @relation("SupervisorAtendente")
 
@@ -110,4 +111,68 @@ model AuditLog {
   usuario         Usuario?  @relation(fields: [usuarioId], references: [id])
 
   @@map("audit_logs")
+}
+
+model Changelog {
+  id          String          @id @default(cuid())
+  versao      String          @unique
+  dataLancamento DateTime
+  tipo        TipoMudanca
+  titulo      String
+  descricao   String
+  categoria   CategoriaChangelog?
+  prioridade  PrioridadeChangelog @default(MEDIA)
+  publicado   Boolean         @default(false)
+  criadoEm    DateTime        @default(now())
+  atualizadoEm DateTime       @updatedAt
+  autorId     String?
+  autor       Usuario?        @relation(fields: [autorId], references: [id])
+  itens       ChangelogItem[]
+
+  @@map("changelog")
+}
+
+model ChangelogItem {
+  id          String    @id @default(cuid())
+  changelogId String
+  tipo        TipoMudanca
+  titulo      String
+  descricao   String
+  ordem       Int       @default(0)
+  criadoEm    DateTime  @default(now())
+  changelog   Changelog @relation(fields: [changelogId], references: [id], onDelete: Cascade)
+
+  @@map("changelog_itens")
+}
+
+enum TipoMudanca {
+  ADICIONADO
+  ALTERADO
+  CORRIGIDO
+  REMOVIDO
+  DEPRECIADO
+  SEGURANCA
+
+  @@map("tipo_mudanca")
+}
+
+enum CategoriaChangelog {
+  FUNCIONALIDADE
+  INTERFACE
+  PERFORMANCE
+  SEGURANCA
+  CONFIGURACAO
+  DOCUMENTACAO
+  TECNICO
+
+  @@map("categoria_changelog")
+}
+
+enum PrioridadeChangelog {
+  BAIXA
+  MEDIA
+  ALTA
+  CRITICA
+
+  @@map("prioridade_changelog")
 }

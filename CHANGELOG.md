@@ -15,7 +15,30 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ---
 
-## [0.2.0] - 2025-01-14
+## [0.2.1] - 2025-01-14
+
+### ✨ Adicionado
+- **Sistema de Changelog Automático**: Criação automática de changelogs baseada em commits Git
+- **Geração de Build Info**: Script para capturar informações de build, Git e ambiente
+- **Interface Web de Changelog**: Página pública para visualização de changelogs com paginação
+- **API de Changelog**: Endpoints completos para CRUD de changelogs e itens
+- **Suporte a Conventional Commits**: Classificação automática de mudanças por tipo
+- **Versionamento Semântico**: Scripts para incremento automático de versões
+- **Documentação Completa**: Guia detalhado do sistema de versionamento
+
+### 🔧 Alterado
+- **README.md**: Adicionada seção sobre sistema de versionamento e novos scripts
+- **package.json**: Incluídos scripts para build:info, changelog e versionamento
+- **Esquema Prisma**: Adicionadas tabelas Changelog e ChangelogItem com enums
+
+### 🛠️ Técnico
+- **Scripts Automatizados**: build-info.js e create-changelog.js para automação
+- **Migrações de Banco**: Nova migração para tabelas de changelog
+- **Tipos TypeScript**: Interfaces para BuildInfo e componentes de changelog
+
+---
+
+## [0.2.0] - 2025-01-13
 
 ### ✨ Adicionado
 - **Sistema de Versionamento Automático**: Scripts personalizados para build, changelog e tags Git

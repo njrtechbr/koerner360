@@ -44,6 +44,13 @@ Sistema de gestão de feedback e avaliações 360° desenvolvido com Next.js e P
 - Opção de feedback anônimo
 - Histórico completo de feedbacks
 
+### Sistema de Versionamento e Changelog
+- Geração automática de informações de build
+- Criação automática de changelogs baseada em commits Git
+- Interface web para gerenciamento de changelogs
+- Versionamento semântico automatizado
+- Suporte a Conventional Commits
+
 ## 🛠️ Instalação e Configuração
 
 ### Pré-requisitos
@@ -108,10 +115,35 @@ src/
 
 ## 🔧 Scripts Disponíveis
 
+### Desenvolvimento
 - `npm run dev` - Inicia o servidor de desenvolvimento
 - `npm run build` - Gera build de produção
 - `npm run start` - Inicia servidor de produção
 - `npm run lint` - Executa linting do código
+- `npm run format` - Formata código com Prettier
+
+### Banco de Dados
+- `npm run db:generate` - Gera cliente Prisma
+- `npm run db:push` - Aplica mudanças no banco
+- `npm run db:migrate` - Executa migrações
+- `npm run db:reset` - Reseta banco de dados
+- `npm run db:seed` - Popula banco com dados iniciais
+- `npm run db:studio` - Abre Prisma Studio
+
+### Versionamento e Changelog
+- `npm run build:info` - Gera informações de build
+- `npm run changelog:create` - Cria changelog baseado em commits
+- `npm run changelog:publish` - Publica último changelog
+- `npm run changelog:auto` - Cria e publica changelog automaticamente
+- `npm run version:patch` - Incrementa versão patch
+- `npm run version:minor` - Incrementa versão minor
+- `npm run version:major` - Incrementa versão major
+
+## 📚 Documentação
+
+- [Sistema de Versionamento e Changelog](./docs/versionamento.md) - Guia completo do sistema automatizado
+- [Conventional Commits](https://www.conventionalcommits.org/) - Padrão de mensagens de commit
+- [Semantic Versioning](https://semver.org/) - Padrão de versionamento
 
 ---
 
