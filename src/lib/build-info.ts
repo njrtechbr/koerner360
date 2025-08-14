@@ -31,22 +31,22 @@ export interface BuildInfo {
 }
 
 export const buildInfo: BuildInfo = {
-  "version": "0.1.1",
+  "version": "0.2.0",
   "name": "koerner360",
   "description": "Sistema completo de gestão de feedback e avaliações",
   "git": {
-    "commitHash": "a846e425b413e333081ee53a2f34c083e6dc9bc2",
-    "commitShort": "a846e42",
+    "commitHash": "2e6f5a0203d2a0a7d77ce2b27cab400ed22603c6",
+    "commitShort": "2e6f5a0",
     "branch": "master",
-    "commitDate": "2025-08-14 02:04:17 -0300",
-    "commitMessage": "Initial commit from Create Next App",
+    "commitDate": "2025-08-14 06:04:55 -0300",
+    "commitMessage": "chore: release v0.1.1 - correções de build e NextAuth v5",
     "commitAuthor": "Nereu Jr",
     "tag": "\"\"",
     "hasUncommittedChanges": true
   },
   "build": {
-    "date": "2025-08-14T09:04:34.963Z",
-    "timestamp": 1755162274964,
+    "date": "2025-08-14T11:38:59.541Z",
+    "timestamp": 1755171539543,
     "nodeVersion": "v22.18.0",
     "platform": "win32",
     "arch": "x64",

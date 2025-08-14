@@ -4,8 +4,8 @@ import { useSession } from 'next-auth/react';
 import { MainLayout } from '@/components/layout/main-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, BarChart3, MessageSquare, TrendingUp } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { Users, BarChart3, MessageSquare, TrendingUp, Clock, CheckCircle } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 
 // Dados de exemplo para os gráficos
 const avaliacoesData = [
@@ -165,7 +165,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Charts */}
-        {(session?.user?.userType === 'admin' || session?.user?.userType === 'supervisor') && (
+        {(session?.user?.userType === 'ADMIN' || session?.user?.userType === 'SUPERVISOR') && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Avaliações por Mês */}
             <Card>
@@ -231,7 +231,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {session?.user?.userType === 'admin' && (
+              {session?.user?.userType === 'ADMIN' && (
                 <>
                   <div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
                     <h3 className="font-medium">Gerenciar Usuários</h3>
@@ -243,7 +243,7 @@ export default function DashboardPage() {
                   </div>
                 </>
               )}
-              {(session?.user?.userType === 'admin' || session?.user?.userType === 'supervisor') && (
+              {(session?.user?.userType === 'ADMIN' || session?.user?.userType === 'SUPERVISOR') && (
                 <div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
                   <h3 className="font-medium">Nova Avaliação</h3>
                   <p className="text-sm text-gray-600">Criar uma nova avaliação</p>

@@ -1,12 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { Menu, X, Home, Users, BarChart3, MessageSquare, Settings, LogOut, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -20,37 +19,37 @@ const menuItems = [
     title: 'Dashboard',
     href: '/dashboard',
     icon: Home,
-    roles: ['admin', 'supervisor', 'attendant'],
+    roles: ['ADMIN', 'SUPERVISOR', 'ATENDENTE'],
   },
   {
     title: 'Usuários',
     href: '/usuarios',
     icon: Users,
-    roles: ['admin', 'supervisor'],
+    roles: ['ADMIN', 'SUPERVISOR'],
   },
   {
     title: 'Avaliações',
     href: '/avaliacoes',
     icon: BarChart3,
-    roles: ['admin', 'supervisor', 'attendant'],
+    roles: ['ADMIN', 'SUPERVISOR', 'ATENDENTE'],
   },
   {
     title: 'Feedbacks',
     href: '/feedbacks',
     icon: MessageSquare,
-    roles: ['admin', 'supervisor', 'attendant'],
+    roles: ['ADMIN', 'SUPERVISOR', 'ATENDENTE'],
   },
   {
     title: 'Configurações',
     href: '/configuracoes',
     icon: Settings,
-    roles: ['admin'],
+    roles: ['ADMIN'],
   },
   {
     title: 'Changelog',
     href: '/changelog',
     icon: FileText,
-    roles: ['admin', 'supervisor', 'attendant'],
+    roles: ['ADMIN', 'SUPERVISOR', 'ATENDENTE'],
   },
 ];
 
@@ -78,11 +77,11 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   const getRoleLabel = (role: string) => {
     switch (role) {
-      case 'admin':
+      case 'ADMIN':
         return 'Administrador';
-      case 'supervisor':
+      case 'SUPERVISOR':
         return 'Supervisor';
-      case 'attendant':
+      case 'ATENDENTE':
         return 'Atendente';
       default:
         return 'Usuário';

@@ -1,45 +1,42 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { auth } from './auth';
+import { withAuth } from "next-auth/middleware"
+import { NextResponse } from "next/server"
 
-// Rotas que requerem autenticação
-const protectedRoutes = [
-  '/dashboard',
-  '/usuarios',
-  '/avaliacoes',
-  '/relatorios',
-  '/configuracoes',
-  '/perfil'
-];
+export default withAuth(
+  function middleware(req) {
+    const { pathname } = req.nextUrl
+    const token = req.nextauth.token
 
-// Rotas públicas (não requerem autenticação)
-const publicRoutes = [
-  '/login',
-  '/api/auth'
-];
+    // Rotas públicas que não precisam de autenticação
+    const publicRoutes = ["/login", "/api/auth"]
+    const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
 
-export default auth((req) => {
-  const { pathname } = req.nextUrl;
-  
-  // Se está na raiz, redireciona para o dashboard
-  if (pathname === '/') {
-    return NextResponse.redirect(new URL('/dashboard', req.url));
-  }
-  
-  // Permite acesso a rotas públicas
-  if (publicRoutes.some(route => pathname.startsWith(route))) {
-    return NextResponse.next();
-  }
-  
-  // Para rotas protegidas, verifica se há sessão
-  if (protectedRoutes.some(route => pathname.startsWith(route))) {
-    if (!req.auth) {
-      return NextResponse.redirect(new URL('/login', req.url));
+    // Controle de acesso baseado em roles
+    if (token) {
+      const userType = token.userType
+
+      // Rotas apenas para admin
+      if (pathname.startsWith("/usuarios") || pathname.startsWith("/configuracoes")) {
+        if (userType !== "ADMIN" && userType !== "SUPERVISOR") {
+          const dashboardUrl = new URL("/dashboard", req.url)
+          return NextResponse.redirect(dashboardUrl)
+        }
+      }
+
+      // Supervisores não podem acessar configurações
+      if (pathname.startsWith("/configuracoes") && userType !== "ADMIN") {
+        const dashboardUrl = new URL("/dashboard", req.url)
+        return NextResponse.redirect(dashboardUrl)
+      }
     }
+
+    return NextResponse.next()
+  },
+  {
+    callbacks: {
+      authorized: ({ token }) => !!token
+    },
   }
-  
-  return NextResponse.next();
-})
+)
 
 export const config = {
   matcher: [
@@ -50,6 +47,6 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    "/((?!api|_next/static|_next/image|favicon.ico).*)",
   ],
-};
+}

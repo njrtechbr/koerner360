@@ -1,29 +1,38 @@
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import './globals.css';
-import { Providers } from '@/components/providers/session-provider';
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/auth";
+import { Providers } from "@/components/providers/session-provider";
+import "./globals.css";
 
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: 'Koerner 360 - Sistema de Gestão de Feedback',
-  description: 'Sistema completo de gestão de feedback e avaliações',
+  title: "Koerner 360",
+  description: "Sistema completo de gestão de feedback e avaliações",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await getServerSession(authOptions);
+
   return (
     <html lang="pt-BR">
-      <body
-        className={`${inter.variable} font-sans antialiased`}
-      >
-        <Providers>{children}</Providers>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <Providers session={session}>
+          {children}
+        </Providers>
       </body>
     </html>
   );
