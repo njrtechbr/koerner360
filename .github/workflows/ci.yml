@@ -1,0 +1,258 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ published ]
+
+jobs:
+  # Job de verificação de qualidade de código
+  quality:
+    name: Qualidade de Código
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+    - name: Checkout do código
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Configurar Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Instalar dependências
+      run: npm ci
+    
+    - name: Verificar formatação
+      run: npm run format:check
+    
+    - name: Executar ESLint
+      run: npm run lint
+    
+    - name: Verificar tipos TypeScript
+      run: npm run type-check
+    
+    - name: Executar testes
+      run: npm test
+      if: hashFiles('**/*.test.*', '**/*.spec.*') != ''
+    
+    - name: Verificar build
+      run: npm run build
+    
+    - name: Gerar informações de build
+      run: npm run build:version
+    
+    - name: Upload dos artefatos de build
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts-${{ matrix.node-version }}
+        path: |
+          .next/
+          src/lib/build-info.*
+        retention-days: 7
+
+  # Job de análise de segurança
+  security:
+    name: Análise de Segurança
+    runs-on: ubuntu-latest
+    needs: quality
+    
+    steps:
+    - name: Checkout do código
+      uses: actions/checkout@v4
+    
+    - name: Configurar Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Instalar dependências
+      run: npm ci
+    
+    - name: Auditoria de segurança
+      run: npm audit --audit-level=moderate
+    
+    - name: Verificar vulnerabilidades com Snyk
+      uses: snyk/actions/node@master
+      continue-on-error: true
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high
+
+  # Job de deploy para preview (apenas PRs)
+  preview-deploy:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+    needs: [quality, security]
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout do código
+      uses: actions/checkout@v4
+    
+    - name: Configurar Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Instalar dependências
+      run: npm ci
+    
+    - name: Build da aplicação
+      run: npm run build
+      env:
+        NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+        NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+    
+    - name: Deploy para Vercel (Preview)
+      uses: amondnet/vercel-action@v25
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        scope: ${{ secrets.VERCEL_ORG_ID }}
+
+  # Job de deploy para produção (apenas main)
+  production-deploy:
+    name: Deploy Produção
+    runs-on: ubuntu-latest
+    needs: [quality, security]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout do código
+      uses: actions/checkout@v4
+    
+    - name: Configurar Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Instalar dependências
+      run: npm ci
+    
+    - name: Build da aplicação
+      run: npm run build
+      env:
+        NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+        NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+    
+    - name: Deploy para Vercel (Produção)
+      uses: amondnet/vercel-action@v25
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        vercel-args: '--prod'
+        scope: ${{ secrets.VERCEL_ORG_ID }}
+
+  # Job de release automático
+  auto-release:
+    name: Release Automático
+    runs-on: ubuntu-latest
+    needs: [quality, security]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout do código
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Configurar Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Instalar dependências
+      run: npm ci
+    
+    - name: Configurar Git
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+    
+    - name: Verificar se há mudanças para release
+      id: check-changes
+      run: |
+        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+        if [ -z "$LAST_TAG" ]; then
+          echo "changes=true" >> $GITHUB_OUTPUT
+        else
+          CHANGES=$(git log $LAST_TAG..HEAD --oneline --no-merges | wc -l)
+          if [ $CHANGES -gt 0 ]; then
+            echo "changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "changes=false" >> $GITHUB_OUTPUT
+          fi
+        fi
+    
+    - name: Determinar tipo de release
+      id: release-type
+      if: steps.check-changes.outputs.changes == 'true'
+      run: |
+        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+        COMMITS=$(git log $LAST_TAG..HEAD --oneline --no-merges)
+        
+        if echo "$COMMITS" | grep -qiE "(breaking|!:)"; then
+          echo "type=major" >> $GITHUB_OUTPUT
+        elif echo "$COMMITS" | grep -qiE "(feat|feature)"; then
+          echo "type=minor" >> $GITHUB_OUTPUT
+        else
+          echo "type=patch" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Criar release
+      if: steps.check-changes.outputs.changes == 'true'
+      run: |
+        npm run release:${{ steps.release-type.outputs.type }}
+    
+    - name: Push das mudanças
+      if: steps.check-changes.outputs.changes == 'true'
+      run: |
+        git push origin main --follow-tags
+
+  # Job de notificação
+  notify:
+    name: Notificações
+    runs-on: ubuntu-latest
+    needs: [quality, security, production-deploy, auto-release]
+    if: always()
+    
+    steps:
+    - name: Notificar sucesso
+      if: needs.quality.result == 'success' && needs.security.result == 'success'
+      run: |
+        echo "✅ Pipeline executado com sucesso!"
+        echo "📦 Qualidade: ${{ needs.quality.result }}"
+        echo "🔒 Segurança: ${{ needs.security.result }}"
+        echo "🚀 Deploy: ${{ needs.production-deploy.result || 'skipped' }}"
+        echo "🏷️  Release: ${{ needs.auto-release.result || 'skipped' }}"
+    
+    - name: Notificar falha
+      if: needs.quality.result == 'failure' || needs.security.result == 'failure'
+      run: |
+        echo "❌ Pipeline falhou!"
+        echo "📦 Qualidade: ${{ needs.quality.result }}"
+        echo "🔒 Segurança: ${{ needs.security.result }}"
+        exit 1

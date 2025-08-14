@@ -1,0 +1,28 @@
+{
+  "version": "0.1.1",
+  "name": "koerner360",
+  "description": "Sistema completo de gestão de feedback e avaliações",
+  "git": {
+    "commitHash": "a846e425b413e333081ee53a2f34c083e6dc9bc2",
+    "commitShort": "a846e42",
+    "branch": "master",
+    "commitDate": "2025-08-14 02:04:17 -0300",
+    "commitMessage": "Initial commit from Create Next App",
+    "commitAuthor": "Nereu Jr",
+    "tag": "\"\"",
+    "hasUncommittedChanges": true
+  },
+  "build": {
+    "date": "2025-08-14T09:04:34.963Z",
+    "timestamp": 1755162274964,
+    "nodeVersion": "v22.18.0",
+    "platform": "win32",
+    "arch": "x64",
+    "environment": "development"
+  },
+  "metadata": {
+    "buildNumber": null,
+    "buildId": null,
+    "ciProvider": null
+  }
+}

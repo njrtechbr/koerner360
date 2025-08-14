@@ -1,0 +1,231 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  # Job para criar release no GitHub
+  create-release:
+    name: Criar Release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout do código
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Configurar Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Instalar dependências
+      run: npm ci
+    
+    - name: Build da aplicação
+      run: npm run build
+      env:
+        NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+        NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+    
+    - name: Gerar informações de build
+      run: npm run build:version
+    
+    - name: Extrair versão da tag
+      id: get-version
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/v}
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+    
+    - name: Obter mudanças desde a última release
+      id: get-changes
+      run: |
+        PREVIOUS_TAG=$(git describe --tags --abbrev=0 ${{ steps.get-version.outputs.tag }}^ 2>/dev/null || echo "")
+        
+        if [ -z "$PREVIOUS_TAG" ]; then
+          CHANGES=$(git log --oneline --no-merges)
+        else
+          CHANGES=$(git log $PREVIOUS_TAG..${{ steps.get-version.outputs.tag }} --oneline --no-merges)
+        fi
+        
+        # Categorizar mudanças
+        FEATURES=$(echo "$CHANGES" | grep -iE "(feat|feature)" || true)
+        FIXES=$(echo "$CHANGES" | grep -iE "(fix|bugfix)" || true)
+        DOCS=$(echo "$CHANGES" | grep -iE "(docs|documentation)" || true)
+        BREAKING=$(echo "$CHANGES" | grep -iE "(breaking|!:)" || true)
+        OTHERS=$(echo "$CHANGES" | grep -viE "(feat|feature|fix|bugfix|docs|documentation|breaking|!:)" || true)
+        
+        # Gerar notas de release
+        RELEASE_NOTES="## 🚀 Koerner 360 v${{ steps.get-version.outputs.version }}\n\n"
+        
+        if [ -n "$BREAKING" ]; then
+          RELEASE_NOTES="${RELEASE_NOTES}### 💥 BREAKING CHANGES\n\n"
+          echo "$BREAKING" | while read -r line; do
+            if [ -n "$line" ]; then
+              CLEAN_LINE=$(echo "$line" | sed 's/^[a-f0-9]* //')
+              RELEASE_NOTES="${RELEASE_NOTES}- $CLEAN_LINE\n"
+            fi
+          done
+          RELEASE_NOTES="${RELEASE_NOTES}\n"
+        fi
+        
+        if [ -n "$FEATURES" ]; then
+          RELEASE_NOTES="${RELEASE_NOTES}### ✨ Novas Funcionalidades\n\n"
+          echo "$FEATURES" | while read -r line; do
+            if [ -n "$line" ]; then
+              CLEAN_LINE=$(echo "$line" | sed 's/^[a-f0-9]* //')
+              RELEASE_NOTES="${RELEASE_NOTES}- $CLEAN_LINE\n"
+            fi
+          done
+          RELEASE_NOTES="${RELEASE_NOTES}\n"
+        fi
+        
+        if [ -n "$FIXES" ]; then
+          RELEASE_NOTES="${RELEASE_NOTES}### 🐛 Correções\n\n"
+          echo "$FIXES" | while read -r line; do
+            if [ -n "$line" ]; then
+              CLEAN_LINE=$(echo "$line" | sed 's/^[a-f0-9]* //')
+              RELEASE_NOTES="${RELEASE_NOTES}- $CLEAN_LINE\n"
+            fi
+          done
+          RELEASE_NOTES="${RELEASE_NOTES}\n"
+        fi
+        
+        if [ -n "$DOCS" ]; then
+          RELEASE_NOTES="${RELEASE_NOTES}### 📚 Documentação\n\n"
+          echo "$DOCS" | while read -r line; do
+            if [ -n "$line" ]; then
+              CLEAN_LINE=$(echo "$line" | sed 's/^[a-f0-9]* //')
+              RELEASE_NOTES="${RELEASE_NOTES}- $CLEAN_LINE\n"
+            fi
+          done
+          RELEASE_NOTES="${RELEASE_NOTES}\n"
+        fi
+        
+        if [ -n "$OTHERS" ]; then
+          RELEASE_NOTES="${RELEASE_NOTES}### 📝 Outras Mudanças\n\n"
+          echo "$OTHERS" | while read -r line; do
+            if [ -n "$line" ]; then
+              CLEAN_LINE=$(echo "$line" | sed 's/^[a-f0-9]* //')
+              RELEASE_NOTES="${RELEASE_NOTES}- $CLEAN_LINE\n"
+            fi
+          done
+          RELEASE_NOTES="${RELEASE_NOTES}\n"
+        fi
+        
+        TOTAL_COMMITS=$(echo "$CHANGES" | wc -l)
+        RELEASE_NOTES="${RELEASE_NOTES}### 📊 Estatísticas\n\n"
+        RELEASE_NOTES="${RELEASE_NOTES}- **Total de commits:** $TOTAL_COMMITS\n"
+        
+        if [ -n "$PREVIOUS_TAG" ]; then
+          RELEASE_NOTES="${RELEASE_NOTES}- **Versão anterior:** $PREVIOUS_TAG\n"
+        fi
+        
+        RELEASE_NOTES="${RELEASE_NOTES}- **Data de release:** $(date +'%d/%m/%Y às %H:%M UTC')\n\n"
+        
+        RELEASE_NOTES="${RELEASE_NOTES}### 🔗 Links Úteis\n\n"
+        RELEASE_NOTES="${RELEASE_NOTES}- [📖 Documentação](https://github.com/${{ github.repository }}/blob/main/README.md)\n"
+        RELEASE_NOTES="${RELEASE_NOTES}- [📋 Changelog Completo](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md)\n"
+        RELEASE_NOTES="${RELEASE_NOTES}- [🐛 Reportar Bug](https://github.com/${{ github.repository }}/issues/new)\n"
+        RELEASE_NOTES="${RELEASE_NOTES}- [💡 Sugerir Funcionalidade](https://github.com/${{ github.repository }}/issues/new)\n\n"
+        
+        RELEASE_NOTES="${RELEASE_NOTES}---\n\n"
+        RELEASE_NOTES="${RELEASE_NOTES}**Instalação:**\n"
+        RELEASE_NOTES="${RELEASE_NOTES}\`\`\`bash\n"
+        RELEASE_NOTES="${RELEASE_NOTES}git clone https://github.com/${{ github.repository }}.git\n"
+        RELEASE_NOTES="${RELEASE_NOTES}cd koerner360\n"
+        RELEASE_NOTES="${RELEASE_NOTES}git checkout ${{ steps.get-version.outputs.tag }}\n"
+        RELEASE_NOTES="${RELEASE_NOTES}npm install\n"
+        RELEASE_NOTES="${RELEASE_NOTES}npm run dev\n"
+        RELEASE_NOTES="${RELEASE_NOTES}\`\`\`\n"
+        
+        # Salvar em arquivo
+        echo -e "$RELEASE_NOTES" > release_notes.md
+        
+        echo "previous_tag=$PREVIOUS_TAG" >> $GITHUB_OUTPUT
+    
+    - name: Criar artefatos de release
+      run: |
+        # Criar arquivo ZIP com o código fonte
+        zip -r koerner360-v${{ steps.get-version.outputs.version }}-source.zip . \
+          -x "node_modules/*" ".git/*" ".next/*" "coverage/*" "*.log" ".env*"
+        
+        # Criar arquivo com informações de build
+        echo "# Koerner 360 v${{ steps.get-version.outputs.version }}" > build-info.txt
+        echo "" >> build-info.txt
+        echo "**Data de Build:** $(date)" >> build-info.txt
+        echo "**Commit:** ${{ github.sha }}" >> build-info.txt
+        echo "**Tag:** ${{ steps.get-version.outputs.tag }}" >> build-info.txt
+        echo "**Branch:** ${{ github.ref_name }}" >> build-info.txt
+        echo "" >> build-info.txt
+        echo "**Dependências Principais:**" >> build-info.txt
+        npm list --depth=0 --prod >> build-info.txt 2>/dev/null || true
+    
+    - name: Criar Release no GitHub
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.get-version.outputs.tag }}
+        name: "🚀 Koerner 360 v${{ steps.get-version.outputs.version }}"
+        body_path: release_notes.md
+        draft: false
+        prerelease: ${{ contains(steps.get-version.outputs.version, '-') }}
+        files: |
+          koerner360-v${{ steps.get-version.outputs.version }}-source.zip
+          build-info.txt
+          CHANGELOG.md
+          README.md
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Notificar sucesso
+      run: |
+        echo "✅ Release v${{ steps.get-version.outputs.version }} criada com sucesso!"
+        echo "🔗 URL: https://github.com/${{ github.repository }}/releases/tag/${{ steps.get-version.outputs.tag }}"
+
+  # Job para deploy de produção após release
+  deploy-production:
+    name: Deploy Produção
+    runs-on: ubuntu-latest
+    needs: create-release
+    
+    steps:
+    - name: Checkout do código
+      uses: actions/checkout@v4
+    
+    - name: Configurar Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Instalar dependências
+      run: npm ci
+    
+    - name: Build da aplicação
+      run: npm run build
+      env:
+        NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+        NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+    
+    - name: Deploy para Vercel
+      uses: amondnet/vercel-action@v25
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        vercel-args: '--prod'
+        scope: ${{ secrets.VERCEL_ORG_ID }}
+    
+    - name: Notificar deploy
+      run: |
+        echo "🚀 Deploy de produção realizado com sucesso!"
+        echo "🌐 Aplicação disponível em produção"

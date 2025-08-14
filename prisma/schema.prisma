@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id                  String      @id @default(cuid())
+  email               String      @unique
+  nome                String
+  senha               String
+  tipoUsuario         TipoUsuario
+  ativo               Boolean     @default(true)
+  criadoEm            DateTime    @default(now())
+  atualizadoEm        DateTime    @updatedAt
+  supervisorId        String?
+  avaliacoesRecebidas Avaliacao[] @relation("AvaliacaoAvaliado")
+  avaliacoesFeitas    Avaliacao[] @relation("AvaliacaoAvaliador")
+  feedbacksRecebidos  Feedback[]  @relation("FeedbackReceptor")
+  feedbacksEnviados   Feedback[]  @relation("FeedbackRemetente")
+  auditLogs           AuditLog[]
+  supervisor          Usuario?    @relation("SupervisorAtendente", fields: [supervisorId], references: [id])
+  supervisoes         Usuario[]   @relation("SupervisorAtendente")
+  accounts            Account[]
+  sessions            Session[]
+
+  @@map("usuarios")
+}
+
+model Avaliacao {
+  id           String   @id @default(cuid())
+  nota         Int
+  comentario   String?
+  periodo      String
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+  avaliadoId   String
+  avaliadorId  String
+  avaliado     Usuario  @relation("AvaliacaoAvaliado", fields: [avaliadoId], references: [id])
+  avaliador    Usuario  @relation("AvaliacaoAvaliador", fields: [avaliadorId], references: [id])
+
+  @@unique([avaliadoId, avaliadorId, periodo])
+  @@map("avaliacoes")
+}
+
+model Feedback {
+  id           String         @id @default(cuid())
+  titulo       String
+  conteudo     String
+  tipo         TipoFeedback
+  prioridade   Prioridade     @default(MEDIA)
+  status       StatusFeedback @default(PENDENTE)
+  criadoEm     DateTime       @default(now())
+  atualizadoEm DateTime       @updatedAt
+  receptorId   String
+  remetenteId  String
+  receptor     Usuario        @relation("FeedbackReceptor", fields: [receptorId], references: [id])
+  remetente    Usuario        @relation("FeedbackRemetente", fields: [remetenteId], references: [id])
+
+  @@map("feedbacks")
+}
+
+enum TipoUsuario {
+  ADMIN
+  SUPERVISOR
+  ATENDENTE
+
+  @@map("tipo_usuario")
+}
+
+enum TipoFeedback {
+  ELOGIO
+  SUGESTAO
+  RECLAMACAO
+  MELHORIA
+
+  @@map("tipo_feedback")
+}
+
+enum Prioridade {
+  BAIXA
+  MEDIA
+  ALTA
+  URGENTE
+
+  @@map("prioridade")
+}
+
+enum StatusFeedback {
+  PENDENTE
+  EM_ANALISE
+  RESOLVIDO
+  REJEITADO
+
+  @@map("status_feedback")
+}
+
+model AuditLog {
+  id              String    @id @default(cuid())
+  usuarioId       String?
+  acao            String
+  nomeTabela      String?
+  registroId      String?
+  dadosAnteriores Json?
+  dadosNovos      Json?
+  enderecoIp      String?
+  userAgent       String?
+  criadoEm        DateTime  @default(now())
+  usuario         Usuario?  @relation(fields: [usuarioId], references: [id])
+
+  @@map("audit_logs")
+}
+
+// Tabelas para NextAuth.js
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              Usuario @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         Usuario  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}

@@ -1,36 +1,118 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Koerner 360
 
-## Getting Started
+Sistema de gestão de feedback e avaliações 360° desenvolvido com Next.js e Prisma.
 
-First, run the development server:
+## 🚀 Tecnologias
 
+- **Framework**: Next.js 14 (App Router)
+- **Linguagem**: TypeScript
+- **Banco de Dados**: PostgreSQL + Prisma ORM
+- **Autenticação**: NextAuth.js v5
+- **Estilização**: Tailwind CSS
+- **Componentes**: shadcn/ui
+- **Ícones**: Lucide React
+- **Formulários**: React Hook Form + Zod
+- **Gráficos**: Recharts
+- **Containerização**: Docker
+
+## 📋 Funcionalidades
+
+### Sistema de Autenticação
+- Login seguro com NextAuth.js
+- Três níveis de acesso:
+  - **Admin**: Acesso total ao sistema
+  - **Supervisor**: Gerenciamento de atendentes e avaliações
+  - **Atendente**: Visualização de avaliações próprias
+
+### Dashboard Interativo
+- Métricas personalizadas por tipo de usuário
+- Gráficos de performance e estatísticas
+- Ações rápidas contextuais
+
+### Gestão de Usuários
+- Cadastro e edição de usuários
+- Controle de permissões por função
+- Status ativo/inativo
+
+### Sistema de Avaliações
+- Criação de avaliações periódicas
+- Notas e comentários detalhados
+- Acompanhamento de metas
+
+### Feedback 360°
+- Feedback positivo, construtivo e sugestões
+- Opção de feedback anônimo
+- Histórico completo de feedbacks
+
+## 🛠️ Instalação e Configuração
+
+### Pré-requisitos
+- Node.js 18+ 
+- npm ou yarn
+- Conta no Supabase
+
+### 1. Instale as dependências
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Configure as variáveis de ambiente
+Configure o arquivo `.env.local` com suas credenciais:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```env
+# NextAuth.js
+NEXTAUTH_SECRET=sua-chave-secreta-aqui
+NEXTAUTH_URL=http://localhost:3000
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=sua-url-do-supabase
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-chave-anonima-do-supabase
+SUPABASE_SERVICE_ROLE_KEY=sua-chave-de-servico-do-supabase
 
-## Learn More
+# Database
+DATABASE_URL=sua-url-do-banco-de-dados
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 3. Execute o projeto
+```bash
+npm run dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+O sistema estará disponível em `http://localhost:3000`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 👥 Usuários de Demonstração
 
-## Deploy on Vercel
+- **Admin**: admin@koerner.com / admin123
+- **Supervisor**: supervisor@koerner.com / super123
+- **Atendente**: atendente@koerner.com / atend123
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 📁 Estrutura do Projeto
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+├── app/                    # App Router do Next.js
+│   ├── api/               # Rotas da API
+│   ├── dashboard/         # Página principal
+│   ├── login/            # Página de login
+│   └── layout.tsx        # Layout raiz
+├── components/           # Componentes React
+│   ├── layout/          # Componentes de layout
+│   ├── providers/       # Providers (Session, etc.)
+│   └── ui/             # Componentes UI (shadcn/ui)
+├── lib/                # Utilitários e configurações
+│   ├── auth.ts         # Configuração NextAuth
+│   ├── supabase.ts     # Cliente Supabase
+│   └── utils.ts        # Utilitários gerais
+└── types/              # Definições de tipos TypeScript
+```
+
+## 🔧 Scripts Disponíveis
+
+- `npm run dev` - Inicia o servidor de desenvolvimento
+- `npm run build` - Gera build de produção
+- `npm run start` - Inicia servidor de produção
+- `npm run lint` - Executa linting do código
+
+---
+
+**Koerner 360** - Transformando feedback em crescimento! 🚀

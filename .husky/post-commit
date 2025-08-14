@@ -1,0 +1,29 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Hook executado após cada commit
+echo "📝 Executando ações pós-commit..."
+
+# Verificar se é um commit de merge
+if git log -1 --pretty=%B | grep -q "Merge"; then
+  echo "🔀 Commit de merge detectado, pulando ações automáticas."
+  exit 0
+fi
+
+# Verificar se é um commit de release
+if git log -1 --pretty=%B | grep -qE "^(release|chore\(release\)|v[0-9]+\.[0-9]+\.[0-9]+)"; then
+  echo "🚀 Commit de release detectado, pulando ações automáticas."
+  exit 0
+fi
+
+# Gerar informações de build
+echo "🔧 Gerando informações de build..."
+node scripts/build-version.js
+
+if [ $? -eq 0 ]; then
+  echo "✅ Informações de build geradas com sucesso."
+else
+  echo "⚠️  Falha ao gerar informações de build."
+fi
+
+echo "✅ Ações pós-commit concluídas!"

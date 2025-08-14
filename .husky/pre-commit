@@ -1,0 +1,42 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Executar lint e verificação de tipos antes do commit
+echo "🔍 Executando verificações pré-commit..."
+
+# Verificar se há arquivos staged
+if git diff --cached --quiet; then
+  echo "⚠️  Nenhum arquivo staged para commit."
+  exit 1
+fi
+
+# Executar ESLint nos arquivos staged
+echo "📝 Verificando código com ESLint..."
+npx lint-staged
+
+if [ $? -ne 0 ]; then
+  echo "❌ ESLint encontrou problemas. Corrija-os antes de fazer commit."
+  exit 1
+fi
+
+# Verificar tipos TypeScript
+echo "🔍 Verificando tipos TypeScript..."
+npm run type-check
+
+if [ $? -ne 0 ]; then
+  echo "❌ Verificação de tipos falhou. Corrija os erros antes de fazer commit."
+  exit 1
+fi
+
+# Executar testes (se existirem)
+if [ -d "__tests__" ] || [ -d "tests" ] || find . -name "*.test.*" -o -name "*.spec.*" | grep -q .; then
+  echo "🧪 Executando testes..."
+  npm test
+  
+  if [ $? -ne 0 ]; then
+    echo "❌ Testes falharam. Corrija-os antes de fazer commit."
+    exit 1
+  fi
+fi
+
+echo "✅ Todas as verificações passaram!"
