@@ -35,18 +35,18 @@ export const buildInfo: BuildInfo = {
   "name": "koerner360",
   "description": "Sistema completo de gestão de feedback e avaliações",
   "git": {
-    "commitHash": "659699fce00065a5b9ae6af9b55ab125251a66cc",
-    "commitShort": "659699f",
+    "commitHash": "8285bab34bb2ebc8a8b32568e5096eaff60fe341",
+    "commitShort": "8285bab",
     "branch": "master",
-    "commitDate": "2025-08-14 09:32:35 -0300",
-    "commitMessage": "0.2.1",
+    "commitDate": "2025-08-14 20:22:38 -0300",
+    "commitMessage": "fix: Corrige erros de build e tipos TypeScript",
     "commitAuthor": "Nereu Jr",
     "tag": "\"\"",
-    "hasUncommittedChanges": true
+    "hasUncommittedChanges": false
   },
   "build": {
-    "date": "2025-08-14T23:22:25.973Z",
-    "timestamp": 1755213745974,
+    "date": "2025-08-14T23:22:45.768Z",
+    "timestamp": 1755213765769,
     "nodeVersion": "v22.18.0",
     "platform": "win32",
     "arch": "x64",
