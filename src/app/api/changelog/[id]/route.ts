@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from '@/auth';
 import { z } from 'zod';
 
 // Schema de validação para atualizar changelog
@@ -79,7 +79,7 @@ export async function PUT(
     }
     
     // Apenas admins podem atualizar changelogs
-    if (session.user.tipoUsuario !== 'ADMIN') {
+    if (session.user.userType !== 'ADMIN') {
       return NextResponse.json(
         { erro: 'Acesso negado. Apenas administradores podem atualizar changelogs.' },
         { status: 403 }
@@ -138,7 +138,7 @@ export async function PUT(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { erro: 'Dados inválidos', detalhes: error.errors },
+        { erro: 'Dados inválidos', detalhes: error.issues },
         { status: 400 }
       );
     }
@@ -167,7 +167,7 @@ export async function DELETE(
     }
     
     // Apenas admins podem deletar changelogs
-    if (session.user.tipoUsuario !== 'ADMIN') {
+    if (session.user.userType !== 'ADMIN') {
       return NextResponse.json(
         { erro: 'Acesso negado. Apenas administradores podem deletar changelogs.' },
         { status: 403 }

@@ -68,27 +68,52 @@ export const authOptions: NextAuthOptions = {
   ],
   pages: {
     signIn: "/login",
-    error: "/login"
+    error: "/auth/error"
   },
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.userType = user.userType
-        token.supervisorId = user.supervisorId
+  jwt: async ({ token, user }) => {
+      try {
+        if (user) {
+          token.userType = user.userType
+          token.supervisorId = user.supervisorId
+        }
+        return token
+      } catch (error) {
+        console.error('Erro no callback JWT:', error)
+        // Retorna o token mesmo em caso de erro para manter a sessão
+        return token
       }
-      return token
     },
-    async session({ session, token }) {
-      if (token) {
-        session.user.id = token.sub as string
-        session.user.userType = token.userType as string
-        session.user.supervisorId = token.supervisorId as string | null
+    session: async ({ session, token }) => {
+      try {
+        if (token) {
+          session.user.id = token.sub as string
+          session.user.userType = token.userType as string
+          session.user.supervisorId = token.supervisorId as string | null
+        }
+        return session
+      } catch (error) {
+        console.error('Erro no callback de sessão:', error)
+        // Retorna sessão vazia para forçar nova autenticação
+        return {
+          ...session,
+          user: {
+            ...session.user,
+            userType: '',
+            supervisorId: ''
+          }
+        }
       }
-      return session
     }
   },
   session: {
-    strategy: "jwt"
+    strategy: "jwt",
+    maxAge: 24 * 60 * 60, // 24 horas
+    updateAge: 60 * 60, // 1 hora
   },
-  secret: process.env.NEXTAUTH_SECRET
+  jwt: {
+    maxAge: 24 * 60 * 60, // 24 horas
+  },
+  secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === "development"
 }

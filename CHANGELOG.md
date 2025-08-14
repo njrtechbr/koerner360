@@ -15,7 +15,62 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ---
 
-## [0.2.1] - 2025-01-14
+## [0.2.3] - 2025-01-27
+
+### 🔒 Segurança
+- **Tratamento de Erros JWT**: Implementado sistema robusto para capturar e tratar erros de descriptografia JWT
+- **Middleware de Autenticação**: Adicionado tratamento de erros no middleware com limpeza automática de cookies corrompidos
+- **Error Boundary**: Criado componente para capturar erros de autenticação em toda a aplicação
+- **Página de Erro Personalizada**: Nova página `/auth/error` para tratar erros de autenticação de forma elegante
+
+### 🐛 Correções
+- **Erro de Paginação**: Corrigido erro `Cannot read properties of undefined (reading 'paginaAtual')` na página de usuários
+- **Estrutura de API**: Padronizada estrutura de resposta das APIs com nomenclatura em português
+- **Consistência de Dados**: Alinhada estrutura de paginação entre frontend e backend
+- **Autenticação**: Corrigido erro `CLIENT_FETCH_ERROR` e `net::ERR_ABORTED` na rota `/api/auth/session`
+- **Componentes Select**: Corrigido erro `A <Select.Item /> must have a value prop that is not an empty string` nos componentes de filtros e formulários
+
+### 🛠️ Melhorias
+- **Utilitários de Autenticação**: Criada biblioteca `auth-utils.ts` com funções para:
+  - Limpeza de cookies do NextAuth
+  - Detecção de erros JWT
+  - Logout forçado com limpeza completa
+  - Gerenciamento de sessão
+- **Callbacks NextAuth**: Adicionado tratamento de erro nos callbacks `jwt` e `session`
+- **Configuração JWT**: Melhorada configuração com `maxAge` e `updateAge` para sessões
+- **Modo Debug**: Habilitado debug do NextAuth em desenvolvimento
+- **APIs Padronizadas**: Estrutura de resposta consistente em todas as APIs com `success`, `data` e `timestamp`
+- **Padronização de APIs**: Implementada nomenclatura consistente em português brasileiro para todas as propriedades de paginação
+- **Paginação Robusta**: Adicionadas propriedades `temProximaPagina` e `temPaginaAnterior` para melhor controle de navegação
+- **NextAuth**: Removida rota de sessão personalizada conflitante, utilizando apenas a rota padrão do NextAuth v4
+
+### 🧪 Desenvolvimento
+- **Página de Teste**: Criada página `/test-jwt` para testar funcionalidades de tratamento JWT
+- **Logs Melhorados**: Adicionados logs detalhados para debugging de problemas de autenticação
+
+### 🔧 Técnico
+- **Redirecionamento Automático**: Tokens corrompidos agora redirecionam automaticamente para login
+- **Limpeza de Cookies**: Implementada limpeza completa de todos os cookies relacionados ao NextAuth
+- **Tratamento de Erro Robusto**: Sistema resiliente que previne crashes por tokens JWT corrompidos
+- **Paginação Robusta**: Sistema de paginação com valores padrão e tratamento de estados indefinidos
+
+---
+
+## [0.2.2] - 2025-08-14
+
+### 🔧 Alterado
+- **Datas do Changelog**: Atualizadas as datas das versões 0.2.1, 0.2.0 e 0.1.0 para agosto de 2025
+- **Sistema de Versionamento**: Configurado para usar data atual do sistema para próximos changelogs
+- **Build Info**: Geradas novas informações de build com versão 0.2.2
+
+### 🛠️ Técnico
+- **Parser de Data**: Atualizado para suportar novas datas e usar data atual como fallback
+- **Banco de Dados**: Preparado para repopulação com datas atualizadas
+- **Versionamento**: Incremento para versão 0.2.2
+
+---
+
+## [0.2.1] - 2025-08-14
 
 ### ✨ Adicionado
 - **Sistema de Changelog Automático**: Criação automática de changelogs baseada em commits Git
@@ -38,7 +93,7 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ---
 
-## [0.2.0] - 2025-01-13
+## [0.2.0] - 2025-08-13
 
 ### ✨ Adicionado
 - **Sistema de Versionamento Automático**: Scripts personalizados para build, changelog e tags Git
@@ -124,7 +179,7 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ---
 
-## [0.1.0] - 2024-12-18
+## [0.1.0] - 2025-08-13
 
 ### ✨ Adicionado
 - Configuração inicial do projeto Next.js 15 com TypeScript

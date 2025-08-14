@@ -111,7 +111,7 @@ export default function AdminChangelogPage() {
       return;
     }
     
-    if (session.user.tipoUsuario !== 'ADMIN') {
+    if (session.user.userType !== 'ADMIN') {
       toast.error('Acesso negado. Apenas administradores podem acessar esta página.');
       router.push('/dashboard');
       return;
@@ -120,7 +120,7 @@ export default function AdminChangelogPage() {
 
   // Carregar changelogs
   useEffect(() => {
-    if (session?.user?.tipoUsuario === 'ADMIN') {
+    if (session?.user?.userType === 'ADMIN') {
       carregarChangelogs();
     }
   }, [session]);
@@ -227,11 +227,11 @@ export default function AdminChangelogPage() {
   };
 
   const getTipoInfo = (tipo: string) => {
-    return tiposMudanca.find(t => t.value === tipo) || tiposMudanca[0];
+    return tiposMudanca.find(t => t.value === tipo) || tiposMudanca[0] || { value: 'ADICIONADO', label: 'Adicionado', color: 'bg-green-100 text-green-800' };
   };
 
   const getPrioridadeInfo = (prioridade: string) => {
-    return prioridades.find(p => p.value === prioridade) || prioridades[1];
+    return prioridades.find(p => p.value === prioridade) || prioridades[1] || { value: 'MEDIA', label: 'Média', color: 'bg-yellow-100 text-yellow-800' };
   };
 
   if (status === 'loading' || loading) {
@@ -245,7 +245,7 @@ export default function AdminChangelogPage() {
     );
   }
 
-  if (!session?.user || session.user.tipoUsuario !== 'ADMIN') {
+  if (!session?.user || session.user.userType !== 'ADMIN') {
     return null;
   }
 

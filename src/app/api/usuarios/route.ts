@@ -106,11 +106,13 @@ export async function GET(request: NextRequest) {
       success: true,
       data: {
         usuarios,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages,
+        paginacao: {
+          paginaAtual: page,
+          itensPorPagina: limit,
+          totalItens: total,
+          totalPaginas: totalPages,
+          temProximaPagina: page < totalPages,
+          temPaginaAnterior: page > 1,
         },
       },
       timestamp: new Date().toISOString(),

@@ -1,6 +1,6 @@
 {
   "name": "koerner360",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "description": "Sistema completo de gestão de feedback e avaliações",
   "author": "Koerner Team",
@@ -48,6 +48,9 @@
     "db:create-demo-users": "tsx scripts/create-demo-users.ts",
     "db:migrate-supabase": "tsx scripts/migrate-from-supabase.ts",
     "db:migrate-complete": "tsx scripts/migrate-complete-from-supabase.ts",
+    "db:populate-changelog": "tsx scripts/populate-changelog.ts",
+    "db:check-changelog": "tsx scripts/check-changelog.ts",
+    "changelog:update-from-git": "tsx scripts/update-changelog-from-git.ts",
     "db:check-tables": "tsx scripts/check-all-tables.ts",
     "db:list-tables": "tsx scripts/list-postgres-tables.ts"
   },
@@ -80,6 +83,7 @@
     "react-dom": "19.1.0",
     "react-hook-form": "^7.62.0",
     "recharts": "^3.1.2",
+    "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.1",
     "zod": "^4.0.17"
   },

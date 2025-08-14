@@ -103,10 +103,12 @@ export default function ChangelogPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [paginacao, setPaginacao] = useState({
-    total: 0,
-    pagina: 1,
-    limite: 10,
-    totalPaginas: 0
+    paginaAtual: 1,
+    itensPorPagina: 10,
+    totalItens: 0,
+    totalPaginas: 0,
+    temProximaPagina: false,
+    temPaginaAnterior: false
   });
 
   const carregarChangelogs = async (pagina = 1) => {
@@ -119,12 +121,19 @@ export default function ChangelogPage() {
       }
       
       const data = await response.json();
-      setChangelogs(data.changelogs || []);
-      setPaginacao(data.paginacao || { total: 0, pagina: 1, limite: 10, totalPaginas: 0 });
+      setChangelogs(data.data?.changelogs || []);
+      setPaginacao(data.data?.paginacao || { 
+        paginaAtual: 1, 
+        itensPorPagina: 10, 
+        totalItens: 0, 
+        totalPaginas: 0,
+        temProximaPagina: false,
+        temPaginaAnterior: false
+      });
       
       // Expandir a primeira versão por padrão
-      if (data.changelogs && data.changelogs.length > 0) {
-        setExpandedVersions(new Set([data.changelogs[0].id]));
+      if (data.data?.changelogs && data.data.changelogs.length > 0) {
+        setExpandedVersions(new Set([data.data.changelogs[0].id]));
       }
     } catch (error) {
       console.error('Erro ao carregar changelog:', error);
@@ -140,7 +149,7 @@ export default function ChangelogPage() {
   }, []);
 
   const handleRefresh = () => {
-    carregarChangelogs(paginacao.pagina);
+    carregarChangelogs(paginacao.paginaAtual);
   };
 
   const toggleVersion = (id: string) => {
@@ -238,12 +247,12 @@ export default function ChangelogPage() {
                 <div className="flex items-center gap-2">
                   <Hash className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">Commit:</span>
-                  <code className="text-xs bg-muted px-2 py-1 rounded">{buildInfoData.commit.slice(0, 8)}</code>
+                  <code className="text-xs bg-muted px-2 py-1 rounded">{buildInfoData.commitShort}</code>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">Build:</span>
-                  <span className="text-muted-foreground">{buildInfoData.buildDate}</span>
+                  <span className="text-muted-foreground">{new Date(buildInfoData.buildDate).toLocaleString('pt-BR')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground" />
@@ -375,19 +384,19 @@ export default function ChangelogPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => carregarChangelogs(paginacao.pagina - 1)}
-              disabled={paginacao.pagina <= 1 || refreshing}
+              onClick={() => carregarChangelogs(paginacao.paginaAtual - 1)}
+              disabled={paginacao.paginaAtual <= 1 || refreshing}
             >
               Anterior
             </Button>
             <span className="text-sm text-muted-foreground px-4">
-              Página {paginacao.pagina} de {paginacao.totalPaginas}
+              Página {paginacao.paginaAtual} de {paginacao.totalPaginas}
             </span>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => carregarChangelogs(paginacao.pagina + 1)}
-              disabled={paginacao.pagina >= paginacao.totalPaginas || refreshing}
+              onClick={() => carregarChangelogs(paginacao.paginaAtual + 1)}
+              disabled={paginacao.paginaAtual >= paginacao.totalPaginas || refreshing}
             >
               Próxima
             </Button>

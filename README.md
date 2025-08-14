@@ -45,9 +45,12 @@ Sistema de gestão de feedback e avaliações 360° desenvolvido com Next.js e P
 - Histórico completo de feedbacks
 
 ### Sistema de Versionamento e Changelog
-- Geração automática de informações de build
-- Criação automática de changelogs baseada em commits Git
-- Interface web para gerenciamento de changelogs
+- **Geração Automática**: Informações de build capturadas automaticamente
+- **Parser de CHANGELOG.md**: Leitura e população automática do banco de dados
+- **Interface Web**: Página pública para visualização de changelogs com paginação
+- **API Completa**: Endpoints para CRUD de changelogs e itens
+- **Atualização por Git**: Script para gerar changelogs baseados em commits
+- **Versionamento Semântico**: Incremento automático de versões
 - Versionamento semântico automatizado
 - Suporte a Conventional Commits
 
@@ -135,6 +138,9 @@ src/
 - `npm run changelog:create` - Cria changelog baseado em commits
 - `npm run changelog:publish` - Publica último changelog
 - `npm run changelog:auto` - Cria e publica changelog automaticamente
+- `npm run changelog:update-from-git` - Atualiza changelog baseado em commits Git
+- `npm run db:populate-changelog` - Popula banco com dados do CHANGELOG.md
+- `npm run db:check-changelog` - Verifica dados do changelog no banco
 - `npm run version:patch` - Incrementa versão patch
 - `npm run version:minor` - Incrementa versão minor
 - `npm run version:major` - Incrementa versão major

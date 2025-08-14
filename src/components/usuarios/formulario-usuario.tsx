@@ -276,15 +276,15 @@ export function FormularioUsuario({ usuario, onSalvar, onCancelar }: FormularioU
           <div className="space-y-2">
             <Label htmlFor="supervisorId">Supervisor</Label>
             <Select
-              value={watch('supervisorId')}
-              onValueChange={(value) => setValue('supervisorId', value)}
+              value={watch('supervisorId') || 'nenhum'}
+              onValueChange={(value) => setValue('supervisorId', value === 'nenhum' ? undefined : value)}
               disabled={carregando || carregandoSupervisores}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione um supervisor" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nenhum supervisor</SelectItem>
+                <SelectItem value="nenhum">Nenhum supervisor</SelectItem>
                 {supervisores.map((supervisor) => (
                   <SelectItem key={supervisor.id} value={supervisor.id}>
                     {supervisor.nome}

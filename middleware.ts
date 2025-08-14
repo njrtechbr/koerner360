@@ -1,8 +1,10 @@
 import { withAuth } from "next-auth/middleware"
 import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
 
 export default withAuth(
   function middleware(req) {
+    try {
     const { pathname } = req.nextUrl
     const token = req.nextauth.token
 
@@ -30,6 +32,20 @@ export default withAuth(
     }
 
     return NextResponse.next()
+    } catch (error) {
+      // Captura erros JWT (tokens corrompidos) e redireciona para login
+      console.error('Erro no middleware (provavelmente JWT corrompido):', error)
+      const loginUrl = new URL('/login', req.url)
+      const response = NextResponse.redirect(loginUrl)
+      
+      // Limpa cookies do NextAuth para forçar nova autenticação
+      response.cookies.delete('next-auth.session-token')
+      response.cookies.delete('__Secure-next-auth.session-token')
+      response.cookies.delete('next-auth.csrf-token')
+      response.cookies.delete('__Secure-next-auth.csrf-token')
+      
+      return response
+    }
   },
   {
     callbacks: {

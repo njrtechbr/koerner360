@@ -60,27 +60,29 @@ export function FiltrosUsuariosComponent({ filtros, onFiltrosChange, onLimparFil
   }, []);
 
   const handleFiltroChange = (campo: keyof FiltrosUsuarios, valor: string) => {
+    // Converte "todos" para string vazia para manter compatibilidade
+    const valorFinal = valor === 'todos' ? '' : valor;
     onFiltrosChange({
       ...filtros,
-      [campo]: valor,
+      [campo]: valorFinal,
     });
   };
 
   const temFiltrosAtivos = () => {
     return (
       filtros.busca ||
-      filtros.tipoUsuario ||
-      filtros.ativo ||
-      filtros.supervisorId
+      (filtros.tipoUsuario && filtros.tipoUsuario !== 'todos') ||
+      (filtros.ativo && filtros.ativo !== 'todos') ||
+      (filtros.supervisorId && filtros.supervisorId !== 'todos')
     );
   };
 
   const contarFiltrosAtivos = () => {
     let count = 0;
     if (filtros.busca) count++;
-    if (filtros.tipoUsuario) count++;
-    if (filtros.ativo) count++;
-    if (filtros.supervisorId) count++;
+    if (filtros.tipoUsuario && filtros.tipoUsuario !== 'todos') count++;
+    if (filtros.ativo && filtros.ativo !== 'todos') count++;
+    if (filtros.supervisorId && filtros.supervisorId !== 'todos') count++;
     return count;
   };
 
@@ -205,14 +207,14 @@ export function FiltrosUsuariosComponent({ filtros, onFiltrosChange, onLimparFil
               <div className="space-y-2">
                 <Label htmlFor="tipoUsuario">Tipo de Usuário</Label>
                 <Select
-                  value={filtros.tipoUsuario}
+                  value={filtros.tipoUsuario || 'todos'}
                   onValueChange={(value) => handleFiltroChange('tipoUsuario', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Todos os tipos" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos os tipos</SelectItem>
+                    <SelectItem value="todos">Todos os tipos</SelectItem>
                     <SelectItem value="ADMIN">Administrador</SelectItem>
                     <SelectItem value="SUPERVISOR">Supervisor</SelectItem>
                     <SelectItem value="ATENDENTE">Atendente</SelectItem>
@@ -224,14 +226,14 @@ export function FiltrosUsuariosComponent({ filtros, onFiltrosChange, onLimparFil
               <div className="space-y-2">
                 <Label htmlFor="ativo">Status</Label>
                 <Select
-                  value={filtros.ativo}
+                  value={filtros.ativo || 'todos'}
                   onValueChange={(value) => handleFiltroChange('ativo', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Todos os status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos os status</SelectItem>
+                    <SelectItem value="todos">Todos os status</SelectItem>
                     <SelectItem value="true">Ativo</SelectItem>
                     <SelectItem value="false">Inativo</SelectItem>
                   </SelectContent>
@@ -242,7 +244,7 @@ export function FiltrosUsuariosComponent({ filtros, onFiltrosChange, onLimparFil
               <div className="space-y-2">
                 <Label htmlFor="supervisorId">Supervisor</Label>
                 <Select
-                  value={filtros.supervisorId}
+                  value={filtros.supervisorId || 'todos'}
                   onValueChange={(value) => handleFiltroChange('supervisorId', value)}
                   disabled={carregandoSupervisores}
                 >
@@ -250,7 +252,7 @@ export function FiltrosUsuariosComponent({ filtros, onFiltrosChange, onLimparFil
                     <SelectValue placeholder="Todos os supervisores" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos os supervisores</SelectItem>
+                    <SelectItem value="todos">Todos os supervisores</SelectItem>
                     {supervisores.map((supervisor) => (
                       <SelectItem key={supervisor.id} value={supervisor.id}>
                         {supervisor.nome}

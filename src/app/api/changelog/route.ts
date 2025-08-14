@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from '@/auth';
 import { z } from 'zod';
 
 // Schema de validação para criar changelog
@@ -70,14 +70,22 @@ export async function GET(request: NextRequest) {
       prisma.changelog.count({ where })
     ]);
     
+    const totalPaginas = Math.ceil(total / limite);
+    
     return NextResponse.json({
-      changelogs,
-      paginacao: {
-        total,
-        pagina,
-        limite,
-        totalPaginas: Math.ceil(total / limite)
-      }
+      success: true,
+      data: {
+        changelogs,
+        paginacao: {
+          paginaAtual: pagina,
+          itensPorPagina: limite,
+          totalItens: total,
+          totalPaginas,
+          temProximaPagina: pagina < totalPaginas,
+          temPaginaAnterior: pagina > 1,
+        },
+      },
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     console.error('Erro ao buscar changelogs:', error);
@@ -101,7 +109,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Apenas admins podem criar changelogs
-    if (session.user.tipoUsuario !== 'ADMIN') {
+    if (session.user.userType !== 'ADMIN') {
       return NextResponse.json(
         { erro: 'Acesso negado. Apenas administradores podem criar changelogs.' },
         { status: 403 }
@@ -158,7 +166,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { erro: 'Dados inválidos', detalhes: error.errors },
+        { erro: 'Dados inválidos', detalhes: error.issues },
         { status: 400 }
       );
     }
