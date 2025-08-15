@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MainLayout } from '@/components/layout/main-layout';
+import { PublicLayout } from '@/components/layout/public-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -182,7 +182,7 @@ export default function ChangelogPage() {
 
   if (loading) {
     return (
-      <MainLayout>
+      <PublicLayout>
         <div className="container mx-auto py-8 px-4 max-w-4xl">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
@@ -191,12 +191,12 @@ export default function ChangelogPage() {
             </div>
           </div>
         </div>
-      </MainLayout>
+      </PublicLayout>
     );
   }
 
   return (
-    <MainLayout>
+    <PublicLayout>
       <div className="container mx-auto py-8 px-4 max-w-4xl">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -403,6 +403,6 @@ export default function ChangelogPage() {
           </div>
         )}
       </div>
-    </MainLayout>
+    </PublicLayout>
   );
 }

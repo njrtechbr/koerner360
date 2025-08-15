@@ -9,8 +9,13 @@ export default withAuth(
     const token = req.nextauth.token
 
     // Rotas públicas que não precisam de autenticação
-    const publicRoutes = ["/login", "/api/auth"]
+    const publicRoutes = ["/login", "/api/auth", "/changelog"]
     const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
+
+    // Se é rota pública, permite acesso
+    if (isPublicRoute) {
+      return NextResponse.next()
+    }
 
     // Controle de acesso baseado em roles
     if (token) {
@@ -49,7 +54,19 @@ export default withAuth(
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token
+      authorized: ({ token, req }) => {
+        const { pathname } = req.nextUrl
+        const publicRoutes = ["/login", "/api/auth", "/changelog"]
+        const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
+        
+        // Permite acesso a rotas públicas sem token
+        if (isPublicRoute) {
+          return true
+        }
+        
+        // Para outras rotas, requer token
+        return !!token
+      }
     },
   }
 )

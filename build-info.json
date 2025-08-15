@@ -1,28 +1,19 @@
 {
-  "version": "0.2.2",
-  "name": "koerner360",
-  "description": "Sistema completo de gestão de feedback e avaliações",
-  "git": {
-    "commitHash": "149060c80ab0482c5b94f8956a4c21d5c66f2777",
-    "commitShort": "149060c",
-    "branch": "master",
-    "commitDate": "2025-08-14 20:23:01 -0300",
-    "commitMessage": "chore: Atualiza informações de build",
-    "commitAuthor": "Nereu Jr",
-    "tag": "\"\"",
-    "hasUncommittedChanges": false
-  },
-  "build": {
-    "date": "2025-08-14T23:23:07.939Z",
-    "timestamp": 1755213787939,
-    "nodeVersion": "v22.18.0",
-    "platform": "win32",
-    "arch": "x64",
-    "environment": "development"
-  },
-  "metadata": {
-    "buildNumber": null,
-    "buildId": null,
-    "ciProvider": null
-  }
+  "version": "0.2.3-dev.2025-08-15T01-50-20",
+  "branch": "master",
+  "commit": "9c11c311567696a02c8a11dfcf88676ffbfd38b4",
+  "commitShort": "9c11c31",
+  "commitMessage": "0.2.3",
+  "hasUncommittedChanges": true,
+  "lastCommitDate": "2025-08-14 20:23:40 -0300",
+  "buildDate": "2025-08-15T01:50:20.781Z",
+  "buildTimestamp": 1755222620781,
+  "environment": "development",
+  "nodeVersion": "v22.18.0",
+  "platform": "win32",
+  "arch": "x64",
+  "buildNumber": null,
+  "ciCommit": null,
+  "ciBranch": null,
+  "ciPipeline": null
 }
