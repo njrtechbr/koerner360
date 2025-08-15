@@ -15,6 +15,25 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ---
 
+## [0.2.4] - 2025-01-27
+
+### ✨ Novas Funcionalidades
+- **Página Pública de Changelog**: Implementada página de changelog acessível publicamente sem necessidade de autenticação
+- **Layout Público**: Criado componente `PublicLayout` para páginas que não requerem autenticação
+- **Navegação Pública**: Adicionado cabeçalho com navegação para páginas públicas
+
+### 🛠️ Melhorias
+- **Middleware**: Configurado para permitir acesso público às rotas `/changelog`, `/login` e `/api/auth`
+- **Acessibilidade**: Melhorada estrutura semântica da página de changelog
+- **Responsividade**: Layout adaptável para dispositivos móveis e desktop
+- **Build Info**: Atualizado sistema de informações de build
+
+### 🔧 Configurações
+- **Roteamento**: Configurado Next.js para permitir acesso público ao changelog
+- **Autenticação**: Ajustado middleware para não bloquear rotas públicas
+
+---
+
 ## [0.2.3] - 2025-01-27
 
 ### 🔒 Segurança
