@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,16 +16,7 @@ import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 
-const usuarioSchema = z.object({
-  nome: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  email: z.string().email('Email inválido'),
-  senha: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres').optional(),
-  tipoUsuario: z.enum(['ADMIN', 'SUPERVISOR', 'ATENDENTE'], {
-    message: 'Tipo de usuário é obrigatório',
-  }),
-  ativo: z.boolean().default(true),
-  supervisorId: z.string().optional(),
-});
+// Schema removido - validação feita no backend
 
 type FormData = {
   nome: string;

@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('admin@koerner360.com');
+  const [email, setEmail] = useState('admin@koerner.com');
   const [password, setPassword] = useState('admin123');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -34,7 +34,7 @@ export default function LoginPage() {
       } else {
         router.push('/dashboard');
       }
-    } catch (error) {
+    } catch {
       setError('Erro interno do servidor');
     } finally {
       setIsLoading(false);

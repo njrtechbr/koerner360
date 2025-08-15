@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -41,7 +41,7 @@ export function DetalhesUsuario({ usuarioId, onEditar, onFechar }: DetalhesUsuar
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  const carregarUsuario = async () => {
+  const carregarUsuario = useCallback(async () => {
     try {
       setCarregando(true);
       setErro(null);
@@ -60,11 +60,11 @@ export function DetalhesUsuario({ usuarioId, onEditar, onFechar }: DetalhesUsuar
     } finally {
       setCarregando(false);
     }
-  };
+  }, [usuarioId]);
 
   useEffect(() => {
     carregarUsuario();
-  }, [usuarioId]);
+  }, [carregarUsuario]);
 
   const getTipoUsuarioLabel = (tipo: string) => {
     switch (tipo) {

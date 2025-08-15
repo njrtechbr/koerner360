@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { MainLayout } from '@/components/layout/main-layout';
 import { Button } from '@/components/ui/button';
@@ -87,7 +87,7 @@ export default function UsuariosPage() {
   });
 
   // Carregar usuários
-  const carregarUsuarios = async () => {
+  const carregarUsuarios = useCallback(async () => {
     try {
       setCarregando(true);
       setErro(null);
@@ -149,19 +149,19 @@ export default function UsuariosPage() {
     } finally {
       setCarregando(false);
     }
-  };
+  }, [filtros, paginacao, router]);
 
   // Efeito para carregar usuários
   useEffect(() => {
     carregarUsuarios();
-  }, [filtros]); // Removido paginacao das dependências para evitar loops
+  }, [carregarUsuarios]);
 
   // Efeito separado para mudanças de paginação
   useEffect(() => {
     if (paginacao.paginaAtual > 0) { // Só executa se paginaAtual foi inicializada
       carregarUsuarios();
     }
-  }, [paginacao.paginaAtual, paginacao.itensPorPagina]);
+  }, [carregarUsuarios, paginacao.paginaAtual, paginacao.itensPorPagina]);
 
   // Funções de manipulação dos modais
   const abrirModal = (tipo: ModalTipo, usuario?: Usuario) => {
@@ -217,7 +217,6 @@ export default function UsuariosPage() {
   // As permissões agora são gerenciadas pelo estado local
   // e são definidas quando a API é chamada com sucesso
   const podeGerenciarUsuarios = permissoes.podeGerenciarUsuarios;
-  const podeVerUsuarios = permissoes.podeVerUsuarios;
   const podeEditarUsuarios = permissoes.podeEditarUsuarios;
   const podeDesativarUsuarios = permissoes.podeDesativarUsuarios;
 

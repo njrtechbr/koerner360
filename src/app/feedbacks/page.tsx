@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/input';
 
 export default function FeedbacksPage() {
   const [carregando, setCarregando] = useState(true);
-  const [feedbacks, setFeedbacks] = useState([]);
   const [busca, setBusca] = useState('');
 
   useEffect(() => {

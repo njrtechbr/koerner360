@@ -93,11 +93,11 @@ export function MainLayout({ children }: MainLayoutProps) {
       {/* Sidebar */}
       <div
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0',
+          'fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        <div className="flex items-center justify-between h-16 px-4 border-b">
+        <div className="flex items-center justify-between h-16 px-4 border-b flex-shrink-0">
           <h1 className="text-xl font-bold text-gray-900">Koerner 360</h1>
           <Button
             variant="ghost"
@@ -109,9 +109,9 @@ export function MainLayout({ children }: MainLayoutProps) {
           </Button>
         </div>
 
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col flex-1 overflow-hidden">
           {/* User Info */}
-          <div className="p-4 border-b">
+          <div className="p-4 border-b flex-shrink-0">
             <div className="flex items-center space-x-3">
               <Avatar>
                 <AvatarImage src="" />
@@ -136,7 +136,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-4 space-y-2">
+          <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
             {filteredMenuItems.map(item => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
@@ -161,11 +161,11 @@ export function MainLayout({ children }: MainLayoutProps) {
           </nav>
 
           {/* Logout */}
-          <div className="p-4 border-t">
+          <div className="p-4 border-t flex-shrink-0">
             <Button
               variant="ghost"
               className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-              onClick={() => signOut()}
+              onClick={() => signOut({ callbackUrl: '/login', redirect: true })}
             >
               <LogOut className="mr-3 h-4 w-4" />
               Sair

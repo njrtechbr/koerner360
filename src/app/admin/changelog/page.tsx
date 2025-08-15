@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, Edit, Trash2, MoreHorizontal, Eye, Calendar, User } from 'lucide-react';
+import { Plus, Edit, Trash2, MoreHorizontal, Calendar, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -168,9 +168,10 @@ export default function AdminChangelogPage() {
       setDialogAberto(false);
       resetForm();
       carregarChangelogs();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao salvar changelog:', error);
-      toast.error(error.message || 'Erro ao salvar changelog');
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao salvar changelog';
+      toast.error(errorMessage);
     }
   };
 
@@ -206,9 +207,10 @@ export default function AdminChangelogPage() {
       
       toast.success('Changelog deletado com sucesso!');
       carregarChangelogs();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao deletar changelog:', error);
-      toast.error(error.message || 'Erro ao deletar changelog');
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao deletar changelog';
+      toast.error(errorMessage);
     }
   };
 

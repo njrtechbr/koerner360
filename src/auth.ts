@@ -12,12 +12,11 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Senha", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null
-        }
-
         try {
-          // Usando Prisma com query raw para acessar a tabela real
+          if (!credentials?.email || !credentials?.password) {
+            return null
+          }
+
           const usuarios = await prisma.$queryRaw<Array<{
             id: string;
             nome: string;
@@ -25,7 +24,7 @@ export const authOptions: NextAuthOptions = {
             senha: string;
             tipoUsuario: string;
             ativo: boolean;
-            supervisorId?: string;
+            supervisorId: string | null;
           }>>`
             SELECT id, nome, email, senha, "tipoUsuario", ativo, "supervisorId"
             FROM usuarios 
@@ -58,7 +57,7 @@ export const authOptions: NextAuthOptions = {
             email: user.email,
             userType: user.tipoUsuario,
             supervisorId: user.supervisorId || null
-          }
+          };
         } catch (error) {
           console.error("Erro na autenticação:", error)
           return null
@@ -68,7 +67,8 @@ export const authOptions: NextAuthOptions = {
   ],
   pages: {
     signIn: "/login",
-    error: "/auth/error"
+    error: "/auth/error",
+    signOut: "/login"
   },
   callbacks: {
   jwt: async ({ token, user }) => {

@@ -9,7 +9,6 @@ import { BarChart3, Plus, Filter, Download } from 'lucide-react';
 
 export default function AvaliacoesPage() {
   const [carregando, setCarregando] = useState(true);
-  const [avaliacoes, setAvaliacoes] = useState([]);
 
   useEffect(() => {
     // Simular carregamento

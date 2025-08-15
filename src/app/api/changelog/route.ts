@@ -28,10 +28,14 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const publicadoApenas = searchParams.get('publicado') === 'true';
     const versao = searchParams.get('versao');
+    const busca = searchParams.get('busca');
+    const tipo = searchParams.get('tipo');
+    const prioridade = searchParams.get('prioridade');
+    const categoria = searchParams.get('categoria');
     const limite = parseInt(searchParams.get('limite') || '10');
     const pagina = parseInt(searchParams.get('pagina') || '1');
     
-    const where: any = {};
+    const where: Record<string, unknown> = {};
     
     if (publicadoApenas) {
       where.publicado = true;
@@ -42,6 +46,45 @@ export async function GET(request: NextRequest) {
         contains: versao,
         mode: 'insensitive'
       };
+    }
+    
+    // Busca geral por versão, título ou descrição
+    if (busca) {
+      where.OR = [
+        {
+          versao: {
+            contains: busca,
+            mode: 'insensitive'
+          }
+        },
+        {
+          titulo: {
+            contains: busca,
+            mode: 'insensitive'
+          }
+        },
+        {
+          descricao: {
+            contains: busca,
+            mode: 'insensitive'
+          }
+        }
+      ];
+    }
+    
+    // Filtro por tipo
+    if (tipo && tipo !== 'all') {
+      where.tipo = tipo;
+    }
+    
+    // Filtro por prioridade
+    if (prioridade && prioridade !== 'all') {
+      where.prioridade = prioridade;
+    }
+    
+    // Filtro por categoria
+    if (categoria && categoria !== 'all') {
+      where.categoria = categoria;
     }
     
     const [changelogs, total] = await Promise.all([

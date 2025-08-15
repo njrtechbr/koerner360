@@ -14,14 +14,7 @@ const criarUsuarioSchema = z.object({
   supervisorId: z.string().optional(),
 });
 
-// Schema de validação para atualização de usuário
-const atualizarUsuarioSchema = z.object({
-  nome: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres').optional(),
-  email: z.string().email('Email inválido').optional(),
-  tipoUsuario: z.enum(['ADMIN', 'SUPERVISOR', 'ATENDENTE']).optional(),
-  ativo: z.boolean().optional(),
-  supervisorId: z.string().optional(),
-});
+// Schema removido - não utilizado nesta rota
 
 // GET /api/usuarios - Listar usuários
 export async function GET(request: NextRequest) {
@@ -57,7 +50,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     // Construir filtros
-    const where: any = { ...whereClause };
+    const where: Record<string, unknown> = { ...whereClause };
     
     if (search) {
       where.OR = [

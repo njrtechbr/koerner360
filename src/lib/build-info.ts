@@ -22,15 +22,15 @@ export interface BuildInfo {
 }
 
 export const buildInfo: BuildInfo = {
-  "version": "0.2.4-dev.2025-08-15T01-51-55",
+  "version": "0.2.4-dev.2025-08-15T07-45-25",
   "branch": "master",
-  "commit": "c9741d0d0568d0569aee164ed40952f83d238840",
-  "commitShort": "c9741d0",
-  "commitMessage": "feat: implementa página pública de changelog e layout público\n\n- Cria componente PublicLayout para páginas sem autenticação\n- Atualiza página de changelog para usar layout público\n- Configura middleware para permitir acesso público ao changelog\n- Atualiza build-info.json com nova versão\n- Melhora acessibilidade da página de changelog",
+  "commit": "988f15b88f0a4be305dfb8bc409a5f5ff9c3b4bf",
+  "commitShort": "988f15b",
+  "commitMessage": "chore: atualiza versão para 0.2.4 e changelog\n\n- Atualiza package.json para versão 0.2.4\n- Adiciona entrada no CHANGELOG.md para versão 0.2.4\n- Atualiza build-info.json com informações atualizadas\n- Documenta implementação da página pública de changelog",
   "hasUncommittedChanges": true,
-  "lastCommitDate": "2025-08-14 22:51:09 -0300",
-  "buildDate": "2025-08-15T01:51:55.304Z",
-  "buildTimestamp": 1755222715304,
+  "lastCommitDate": "2025-08-14 22:52:06 -0300",
+  "buildDate": "2025-08-15T07:45:25.713Z",
+  "buildTimestamp": 1755243925713,
   "environment": "development",
   "nodeVersion": "v22.18.0",
   "platform": "win32",
