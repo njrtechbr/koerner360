@@ -1,84 +1,44 @@
-// Este arquivo é gerado automaticamente pelo script build-version.js
-// Não edite manualmente - será sobrescrito no próximo build
+// Este arquivo é gerado automaticamente durante o build
+// Não edite manualmente - será sobrescrito
 
 export interface BuildInfo {
   version: string;
-  name: string;
-  description: string;
-  git: {
-    commitHash: string;
-    commitShort: string;
-    branch: string;
-    commitDate: string;
-    commitMessage: string;
-    commitAuthor: string;
-    tag: string | null;
-    hasUncommittedChanges: boolean;
-  };
-  build: {
-    date: string;
-    timestamp: number;
-    nodeVersion: string;
-    platform: string;
-    arch: string;
-    environment: string;
-  };
-  metadata: {
-    buildNumber: string | null;
-    buildId: string | null;
-    ciProvider: string | null;
-  };
+  branch: string;
+  commit: string;
+  commitShort: string;
+  commitMessage: string;
+  hasUncommittedChanges: boolean;
+  lastCommitDate: string;
+  buildDate: string;
+  buildTimestamp: number;
+  environment: string;
+  nodeVersion: string;
+  platform: string;
+  arch: string;
+  buildNumber: string | null;
+  ciCommit: string | null;
+  ciBranch: string | null;
+  ciPipeline: string | null;
 }
 
 export const buildInfo: BuildInfo = {
-  "version": "0.2.5",
-  "name": "koerner360",
-  "description": "Sistema completo de gestão de feedback e avaliações",
-  "git": {
-    "commitHash": "e07e536a2a7ecd0afdb36d868fc1f7ddc96421c9",
-    "commitShort": "e07e536",
-    "branch": "master",
-    "commitDate": "2025-08-16 18:25:48 -0300",
-    "commitMessage": "chore: atualiza informações de build",
-    "commitAuthor": "Nereu Jr",
-    "tag": "\"\"",
-    "hasUncommittedChanges": false
-  },
-  "build": {
-    "date": "2025-08-16T21:25:54.394Z",
-    "timestamp": 1755379554395,
-    "nodeVersion": "v22.18.0",
-    "platform": "win32",
-    "arch": "x64",
-    "environment": "development"
-  },
-  "metadata": {
-    "buildNumber": null,
-    "buildId": null,
-    "ciProvider": null
-  }
+  "version": "0.2.6-dev.2025-08-16T21-27-14",
+  "branch": "master",
+  "commit": "e3219a4eb258342da38384d0183c2dfafcbcdc6a",
+  "commitShort": "e3219a4",
+  "commitMessage": "0.2.6",
+  "hasUncommittedChanges": true,
+  "lastCommitDate": "2025-08-16 18:26:23 -0300",
+  "buildDate": "2025-08-16T21:27:14.603Z",
+  "buildTimestamp": 1755379634603,
+  "environment": "development",
+  "nodeVersion": "v22.18.0",
+  "platform": "win32",
+  "arch": "x64",
+  "buildNumber": null,
+  "ciCommit": null,
+  "ciBranch": null,
+  "ciPipeline": null
 };
 
-// Função utilitária para obter versão formatada
-export function getVersionString(): string {
-  const { version, git } = buildInfo;
-  const suffix = git.hasUncommittedChanges ? '-dirty' : '';
-  const tag = git.tag ? ` (${git.tag})` : '';
-  return `v${version}${suffix}${tag}`;
-}
-
-// Função utilitária para obter informações de build formatadas
-export function getBuildString(): string {
-  const { git, build } = buildInfo;
-  return `${git.commitShort} - ${new Date(build.date).toLocaleString('pt-BR')}`;
-}
-
-// Função utilitária para verificar se é build de produção
-export function isProductionBuild(): boolean {
-  return buildInfo.build.environment === 'production';
-}
-
-// Função utilitária para verificar se é build de desenvolvimento
-export function isDevelopmentBuild(): boolean {
-  return buildInfo.build.environment === 'development';
-}
+export default buildInfo;
