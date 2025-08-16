@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '../../../../../auth.ts';
+import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import {
+  createSuccessResponse,
+  createErrorResponse,
+  handleGenericError,
+  validateAuthentication,
+  validatePermissions,
+  ErrorCodes,
+  withErrorHandling
+} from '@/lib/api-response';
+import { TipoUsuario } from '@prisma/client';
 
 // Schema de validação para atualização de usuário
 const atualizarUsuarioSchema = z.object({
@@ -20,17 +30,23 @@ interface RouteParams {
 
 // GET /api/usuarios/[id] - Obter usuário específico
 export async function GET(request: NextRequest, { params }: RouteParams) {
-  try {
+  return withErrorHandling(async () => {
     const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    }
+    
+    // Validar autenticação
+    const authError = validateAuthentication(session?.user);
+    if (authError) return authError;
 
     const { id } = params;
 
-    // Verificar permissões
-    if (session.user.userType !== 'ADMIN' && session.user.userType !== 'SUPERVISOR' && session.user.id !== params.id) {
-      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
+    // Verificar permissões - admin, supervisor ou próprio usuário
+    if (session!.user.userType !== 'ADMIN' && 
+        session!.user.userType !== 'SUPERVISOR' && 
+        session!.user.id !== params.id) {
+      return createErrorResponse(
+        ErrorCodes.FORBIDDEN,
+        'Sem permissão para acessar este usuário'
+      );
     }
 
     const usuario = await prisma.usuario.findUnique({
@@ -63,39 +79,27 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     });
 
     if (!usuario) {
-      return NextResponse.json(
-        { success: false, error: { code: 'NOT_FOUND', message: 'Usuário não encontrado' } },
-        { status: 404 }
+      return createErrorResponse(
+        ErrorCodes.NOT_FOUND,
+        'Usuário não encontrado'
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      data: { usuario },
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error('Erro ao buscar usuário:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: 'INTERNAL_ERROR',
-          message: 'Erro interno do servidor',
-        },
-      },
-      { status: 500 }
+    return createSuccessResponse(
+      { usuario },
+      'Usuário encontrado com sucesso'
     );
-  }
+  }, 'buscar usuário específico');
 }
 
 // PUT /api/usuarios/[id] - Atualizar usuário
 export async function PUT(request: NextRequest, { params }: RouteParams) {
-  try {
+  return withErrorHandling(async () => {
     const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    }
+    
+    // Validar autenticação
+    const authError = validateAuthentication(session?.user);
+    if (authError) return authError;
 
     const { id } = params;
     const body = await request.json();
@@ -107,21 +111,27 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     });
 
     if (!usuarioExistente) {
-      return NextResponse.json(
-        { success: false, error: { code: 'NOT_FOUND', message: 'Usuário não encontrado' } },
-        { status: 404 }
+      return createErrorResponse(
+        ErrorCodes.NOT_FOUND,
+        'Usuário não encontrado'
       );
     }
 
     // Verificar permissões
-    if (session.user.userType !== 'ADMIN' && session.user.id !== id) {
+    if (session!.user.userType !== 'ADMIN' && session!.user.id !== id) {
       // Supervisores podem editar apenas seus subordinados
-      if (session.user.userType === 'SUPERVISOR') {
-        if (usuarioExistente.supervisorId !== session.user.id) {
-          return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
+      if (session!.user.userType === TipoUsuario.SUPERVISOR) {
+        if (usuarioExistente.supervisorId !== session!.user.id) {
+          return createErrorResponse(
+            ErrorCodes.FORBIDDEN,
+            'Sem permissão para editar este usuário'
+          );
         }
       } else {
-        return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
+        return createErrorResponse(
+          ErrorCodes.FORBIDDEN,
+          'Sem permissão para editar usuários'
+        );
       }
     }
 
@@ -132,15 +142,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       });
 
       if (emailExistente) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: {
-              code: 'CONFLICT',
-              message: 'Email já está em uso',
-            },
-          },
-          { status: 409 }
+        return createErrorResponse(
+          ErrorCodes.CONFLICT,
+          'Email já está em uso'
         );
       }
     }
@@ -152,15 +156,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       });
 
       if (!supervisor || supervisor.tipoUsuario !== 'SUPERVISOR') {
-        return NextResponse.json(
-          {
-            success: false,
-            error: {
-              code: 'VALIDATION_ERROR',
-              message: 'Supervisor inválido',
-            },
-          },
-          { status: 400 }
+        return createErrorResponse(
+          ErrorCodes.VALIDATION_ERROR,
+          'Supervisor inválido'
         );
       }
     }
@@ -175,8 +173,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         email: true,
         tipoUsuario: true,
         ativo: true,
-        criado_em: true,
-        atualizado_em: true,
+        criadoEm: true,
+        atualizadoEm: true,
         supervisorId: true,
         supervisor: {
           select: {
@@ -187,48 +185,21 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      data: { usuario: usuarioAtualizado },
-      message: 'Usuário atualizado com sucesso',
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Dados inválidos',
-            details: error.issues,
-          },
-        },
-        { status: 400 }
-      );
-    }
-
-    console.error('Erro ao atualizar usuário:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: 'INTERNAL_ERROR',
-          message: 'Erro interno do servidor',
-        },
-      },
-      { status: 500 }
+    return createSuccessResponse(
+      { usuario: usuarioAtualizado },
+      'Usuário atualizado com sucesso'
     );
-  }
+  }, 'atualizar usuário');
 }
 
 // DELETE /api/usuarios/[id] - Desativar usuário
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  try {
+  return withErrorHandling(async () => {
     const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    }
+    
+    // Validar autenticação
+    const authError = validateAuthentication(session?.user);
+    if (authError) return authError;
 
     const { id } = params;
 
@@ -238,20 +209,25 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     });
 
     if (!usuarioExistente) {
-      return NextResponse.json(
-        { success: false, error: { code: 'NOT_FOUND', message: 'Usuário não encontrado' } },
-        { status: 404 }
+      return createErrorResponse(
+        ErrorCodes.NOT_FOUND,
+        'Usuário não encontrado'
       );
     }
 
     // Verificar permissões - apenas admin pode desativar usuários
-    if (session.user.userType !== 'ADMIN') {
-      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
-    }
+    const permissionError = validatePermissions(
+      session!.user.userType,
+      ['ADMIN']
+    );
+    if (permissionError) return permissionError;
 
     // Verificar se usuário está tentando desativar a si mesmo
-    if (session.user.id === id) {
-      return NextResponse.json({ error: 'Não é possível desativar sua própria conta' }, { status: 400 });
+    if (session!.user.id === id) {
+      return createErrorResponse(
+        ErrorCodes.VALIDATION_ERROR,
+        'Não é possível desativar sua própria conta'
+      );
     }
 
     // Desativar usuário (soft delete)
@@ -266,23 +242,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      data: { usuario: usuarioDesativado },
-      message: 'Usuário desativado com sucesso',
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error('Erro ao desativar usuário:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: 'INTERNAL_ERROR',
-          message: 'Erro interno do servidor',
-        },
-      },
-      { status: 500 }
+    return createSuccessResponse(
+      { usuario: usuarioDesativado },
+      'Usuário desativado com sucesso'
     );
-  }
+  }, 'desativar usuário');
 }

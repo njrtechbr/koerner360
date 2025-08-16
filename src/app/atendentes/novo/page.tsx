@@ -4,7 +4,7 @@
  */
 
 import { Metadata } from 'next';
-import { auth } from '../../../../auth.ts';
+import { auth } from '../../../../auth';
 import { redirect } from 'next/navigation';
 import { TipoUsuario } from '@prisma/client';
 import { FormularioAtendente } from '@/components/atendentes/formulario-atendente';
@@ -30,7 +30,7 @@ export default async function NovoAtendentePage() {
   }
 
   // Verificar permissões - apenas admin e supervisor podem criar atendentes
-  if (session.user.tipoUsuario === TipoUsuario.ATENDENTE) {
+  if (session.user.userType === TipoUsuario.ATENDENTE) {
     redirect('/dashboard');
   }
 
@@ -39,7 +39,7 @@ export default async function NovoAtendentePage() {
       {/* Cabeçalho da página */}
       <div className="flex items-center gap-4">
         <Button variant="outline" size="icon" asChild>
-          <Link href="/atendentes">
+          <Link href="/atendentes" prefetch={false}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>

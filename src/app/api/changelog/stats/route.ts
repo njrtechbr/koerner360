@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { createSuccessResponse, createErrorResponse, ErrorCodes } from '@/lib/api-response';
 
 /**
  * GET /api/changelog/stats
@@ -57,20 +58,12 @@ export async function GET() {
       typeDistribution: typeDistributionMap
     };
 
-    return NextResponse.json({
-      success: true,
-      data: estatisticas,
-      timestamp: new Date().toISOString()
-    });
+    return createSuccessResponse(estatisticas);
   } catch (error) {
     console.error('Erro ao buscar estatísticas do changelog:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Erro interno do servidor',
-        timestamp: new Date().toISOString()
-      },
-      { status: 500 }
+    return createErrorResponse(
+      ErrorCodes.INTERNAL_ERROR,
+      'Erro interno do servidor'
     );
   }
 }

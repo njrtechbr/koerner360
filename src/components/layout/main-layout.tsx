@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { Menu, X, Home, Users, UserCheck, BarChart3, MessageSquare, Settings, LogOut, FileText } from 'lucide-react';
+import { Menu, X, Home, Users, UserCheck, Settings, LogOut, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -140,6 +140,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                 <Link
                   key={item.href}
                   href={item.href}
+                  prefetch={false}
                   className={cn(
                     'flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors',
                     isActive

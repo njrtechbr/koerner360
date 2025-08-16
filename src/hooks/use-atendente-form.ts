@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
-import { useToast } from '@/hooks/use-toast';
+import { useSonnerToast } from '@/hooks/use-sonner-toast';
 import { 
   Atendente, 
   AtendenteFormData, 
@@ -47,7 +47,7 @@ export function useAtendenteForm({
   onErro
 }: UseAtendenteFormProps): UseAtendenteFormReturn {
   const router = useRouter();
-  const { toast } = useToast();
+  const { showSuccess, showError } = useSonnerToast();
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -56,7 +56,7 @@ export function useAtendenteForm({
 
   // Configurar formulário
   const form = useForm<AtendenteFormData>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(criarAtendenteSchema),
     defaultValues: {
       nome: atendente?.nome || '',
       email: atendente?.email || '',
@@ -67,15 +67,15 @@ export function useAtendenteForm({
       setor: atendente?.setor || '',
       cargo: atendente?.cargo || '',
       portaria: atendente?.portaria || '',
-      dataAdmissao: atendente?.data_admissao 
-        ? new Date(atendente.data_admissao).toISOString().split('T')[0] 
+      dataAdmissao: atendente?.dataAdmissao
+        ? new Date(atendente.dataAdmissao).toISOString().split('T')[0]
         : '',
-      dataNascimento: atendente?.data_nascimento 
-        ? new Date(atendente.data_nascimento).toISOString().split('T')[0] 
+      dataNascimento: atendente?.dataNascimento
+        ? new Date(atendente.dataNascimento).toISOString().split('T')[0]
         : '',
       status: atendente?.status || StatusAtendente.ATIVO,
       observacoes: atendente?.observacoes || '',
-      avatarUrl: atendente?.foto_url || ''
+      avatarUrl: atendente?.avatarUrl || ''
     },
     mode: 'onChange' // Validação em tempo real
   });
@@ -147,12 +147,11 @@ export function useAtendenteForm({
       }
 
       // Sucesso
-      toast({
-        title: modo === 'criar' ? 'Atendente criado' : 'Atendente atualizado',
-        description: modo === 'criar' 
-          ? 'O atendente foi criado com sucesso.' 
-          : 'As informações do atendente foram atualizadas.',
-      });
+      showSuccess(
+        modo === 'criar' 
+          ? 'Atendente criado com sucesso! O atendente foi criado e está disponível no sistema.' 
+          : 'Atendente atualizado com sucesso! As informações do atendente foram atualizadas.'
+      );
 
       if (onSucesso) {
         onSucesso(resultado.data.atendente);
@@ -165,11 +164,9 @@ export function useAtendenteForm({
       console.error('Erro ao salvar atendente:', error);
       setErro(mensagemErro);
       
-      toast({
-        title: 'Erro',
-        description: mensagemErro,
-        variant: 'destructive',
-      });
+      showError(
+        `Erro ao salvar atendente: ${mensagemErro}`
+      );
 
       if (onErro) {
         onErro(mensagemErro);

@@ -44,6 +44,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useSonnerToast } from '@/hooks/use-sonner-toast';
 
 interface LogsAuditoriaProps {
   logs: LogAuditoria[];
@@ -91,6 +92,7 @@ export function LogsAuditoria({
   onCarregarMais,
   temMaisLogs = false
 }: LogsAuditoriaProps) {
+  const { showInfo } = useSonnerToast();
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
   const [filtros, setFiltros] = useState({
     busca: '',
@@ -101,20 +103,41 @@ export function LogsAuditoria({
   });
 
   /**
+   * Gerar detalhes da ação baseado no tipo e dados
+   */
+  const gerarDetalhes = (log: LogAuditoria): string => {
+    const nomeAtendente = log.atendente?.nome || 'Atendente';
+    
+    switch (log.acao) {
+      case 'CREATE':
+        return `Criou o atendente ${nomeAtendente}`;
+      case 'UPDATE':
+        return `Atualizou informações do atendente ${nomeAtendente}`;
+      case 'DELETE':
+        return `Removeu o atendente ${nomeAtendente}`;
+      case 'VIEW':
+        return `Visualizou o atendente ${nomeAtendente}`;
+      default:
+        return `Executou ação ${log.acao} no atendente ${nomeAtendente}`;
+    }
+  };
+
+  /**
    * Filtrar logs baseado nos filtros aplicados
    */
   const logsFiltrados = logs.filter(log => {
+    const detalhes = gerarDetalhes(log);
     const matchBusca = !filtros.busca || 
-      log.detalhes.toLowerCase().includes(filtros.busca.toLowerCase()) ||
+      detalhes.toLowerCase().includes(filtros.busca.toLowerCase()) ||
       log.usuario?.nome.toLowerCase().includes(filtros.busca.toLowerCase());
     
     const matchAcao = !filtros.acao || log.acao === filtros.acao;
     
     const matchDataInicio = !filtros.dataInicio || 
-      new Date(log.criado_em) >= new Date(filtros.dataInicio);
+      log.criadoEm >= new Date(filtros.dataInicio);
     
     const matchDataFim = !filtros.dataFim || 
-      new Date(log.criado_em) <= new Date(filtros.dataFim + 'T23:59:59');
+      log.criadoEm <= new Date(filtros.dataFim + 'T23:59:59');
     
     const matchUsuario = !filtros.usuario || 
       log.usuario?.nome.toLowerCase().includes(filtros.usuario.toLowerCase());
@@ -133,6 +156,7 @@ export function LogsAuditoria({
       dataFim: '',
       usuario: ''
     });
+    showInfo('Filtros de auditoria removidos');
   };
 
   /**
@@ -218,13 +242,13 @@ export function LogsAuditoria({
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger>
-                  <span className="text-xs text-muted-foreground">
-                    {formatarDataRelativa(log.criado_em)}
-                  </span>
+                  <time className="text-xs text-muted-foreground">
+                    {formatarDataRelativa(log.criadoEm.toISOString())}
+                  </time>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>
-                    {new Date(log.criado_em).toLocaleString('pt-BR', {
+                    {log.criadoEm.toLocaleString('pt-BR', {
                       day: '2-digit',
                       month: '2-digit',
                       year: 'numeric',
@@ -239,23 +263,23 @@ export function LogsAuditoria({
           </div>
 
           <p className="text-sm text-muted-foreground">
-            {log.detalhes}
+            {gerarDetalhes(log)}
           </p>
 
           {/* Dados anteriores e novos (para atualizações) */}
-          {log.acao === 'UPDATE' && log.dados_anteriores && log.dados_novos && (
+          {log.acao === 'UPDATE' && log.dadosAnteriores && log.dadosNovos && (
             <div className="mt-3 p-3 bg-muted/30 rounded-md">
               <p className="text-xs font-medium text-muted-foreground mb-2">Alterações:</p>
               <div className="space-y-1 text-xs">
-                {Object.entries(log.dados_novos).map(([campo, valorNovo]) => {
-                  const valorAnterior = (log.dados_anteriores as Record<string, unknown>)?.[campo];
+                {Object.entries(log.dadosNovos).map(([campo, valorNovo]) => {
+                  const valorAnterior = (log.dadosAnteriores as Record<string, unknown>)?.[campo];
                   if (valorAnterior !== valorNovo) {
                     return (
                       <div key={campo} className="flex items-center gap-2">
                         <span className="font-medium capitalize">{campo}:</span>
-                        <span className="text-red-600 line-through">{valorAnterior}</span>
+                        <span className="text-red-600 line-through">{String(valorAnterior)}</span>
                         <span>→</span>
-                        <span className="text-green-600">{valorNovo}</span>
+                        <span className="text-green-600">{String(valorNovo)}</span>
                       </div>
                     );
                   }
@@ -266,9 +290,9 @@ export function LogsAuditoria({
           )}
 
           {/* IP do usuário */}
-          {log.ip_usuario && (
+          {log.enderecoIp && (
             <p className="text-xs text-muted-foreground">
-              IP: {log.ip_usuario}
+              IP: {log.enderecoIp}
             </p>
           )}
         </div>

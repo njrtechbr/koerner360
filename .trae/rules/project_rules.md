@@ -286,19 +286,19 @@ enum TipoUsuario {
 ```powershell
 # Obter data e hora completa
 Get-Date -Format "dd/MM/yyyy HH:mm:ss"
-# Resultado: 15/01/2025 14:30:25
+# Resultado: 15/08/2025 21:38:06
 
 # Obter apenas data
 Get-Date -Format "dd/MM/yyyy"
-# Resultado: 15/01/2025
+# Resultado: 15/08/2025
 
 # Obter apenas hora
 Get-Date -Format "HH:mm:ss"
-# Resultado: 14:30:25
+# Resultado: 21:38:15
 
 # Formato ISO 8601 para APIs
 Get-Date -Format "o"
-# Resultado: 2025-01-15T14:30:25.1234567-03:00
+# Resultado: 2025-08-15T21:38:01.0515454-03:00
 ```
 
 ### Regras de Implementação
@@ -320,8 +320,8 @@ const agora = new Date();
 
 // ✅ CORRETO - Usuário fornece via PowerShell
 // Usuário executa: Get-Date -Format "o"
-// IA recebe: "2025-01-15T14:30:25.1234567-03:00"
-const timestamp = "2025-01-15T14:30:25.1234567-03:00";
+// IA recebe: "2025-08-15T21:38:01.0515454-03:00"
+const timestamp = "2025-08-15T21:38:01.0515454-03:00";
 const agora = new Date(timestamp);
 ```
 
@@ -826,3 +826,95 @@ chore: atualiza dependências
 - **v1.0.0** (Agosto 2024): Versão inicial das regras do projeto
 
 Para dúvidas ou sugestões sobre estas regras, abra uma issue no repositório.
+
+
+### ⚠️ Regras Críticas para Manipulação de Dados
+
+**REGRA OBRIGATÓRIA**: É estritamente proibido apagar dados do banco de dados sem autorização prévia e documentada, independentemente do ambiente (desenvolvimento, teste ou produção).
+
+#### Procedimentos Obrigatórios
+
+1. **Backup Completo**
+   - Realizar backup completo do banco antes de qualquer operação de modificação
+   - Armazenar backup em local seguro e documentado
+   - Validar integridade do backup antes de prosseguir
+
+2. **Documentação**
+   - Registrar detalhadamente a operação a ser realizada
+   - Documentar motivo da modificação
+   - Manter log de todas as alterações
+
+3. **Autorização**
+   - Obter autorização formal do responsável pelo projeto
+   - Validar impacto da operação com a equipe
+   - Confirmar necessidade real da modificação
+
+4. **Ambiente Seguro**
+   - Utilizar ambiente isolado para testes
+   - Validar scripts de modificação
+   - Ter plano de rollback documentado
+
+**LEMBRE-SE**: Dados são o ativo mais valioso do sistema. Sua preservação é prioridade máxima.
+
+
+## 📚 Documentation References
+
+### Official Documentation
+Always follow the official documentation for the core technologies used in this project:
+
+- **Next.js**: [Official Documentation](https://nextjs.org/docs)
+  - App Router
+  - API Routes
+  - Server Components
+  - Data Fetching
+
+- **Prisma**: [Next.js Integration Guide](https://www.prisma.io/docs/guides/nextjs)
+  - Database Setup
+  - Migrations
+  - Query Optimization
+  - Type Safety
+
+- **Tailwind CSS**: [Documentation](https://tailwindcss.com/docs)
+  - Utility Classes
+  - Configuration
+  - Custom Styles
+  - Responsive Design
+
+- **shadcn/ui**: [Component Library](https://ui.shadcn.com/docs)
+  - Installation
+  - Components
+  - Theming
+  - Customization
+
+- **NextAuth.js**: [Getting Started](https://authjs.dev/getting-started)
+  - Authentication
+  - Session Management
+  - Providers
+  - Middleware
+
+### Best Practices
+- Always check the latest version compatibility
+- Follow recommended patterns and practices
+- Refer to example implementations
+- Review security guidelines
+
+## 📚 ESLint Documentation
+
+### Official Documentation
+- Main documentation: https://eslint.org/docs/latest/
+- User Guide: https://eslint.org/docs/latest/use/
+- Rules Reference: https://eslint.org/docs/latest/rules/
+- Developer Guide: https://eslint.org/docs/latest/developer-guide/
+
+### Key Sections
+- Getting Started
+- Configuration
+- Rules
+- Command Line Interface
+- Developer Guide
+- Maintainer Guide
+
+### Additional Resources
+- ESLint Blog: https://eslint.org/blog/
+- ESLint GitHub: https://github.com/eslint/eslint
+- Contributing Guide: https://eslint.org/docs/latest/contribute/

@@ -18,6 +18,7 @@ import { Plus, Edit, Trash2, MoreHorizontal, Calendar, User } from 'lucide-react
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { TipoUsuario } from '@prisma/client';
 
 interface ChangelogItem {
   id: string;
@@ -120,7 +121,7 @@ export default function AdminChangelogPage() {
 
   // Carregar changelogs
   useEffect(() => {
-    if (session?.user?.userType === 'ADMIN') {
+    if (session?.user?.userType !== TipoUsuario.ADMIN) {
       carregarChangelogs();
     }
   }, [session]);

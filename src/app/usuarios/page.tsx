@@ -20,6 +20,7 @@ import { ConfirmarDesativacao } from '@/components/usuarios/confirmar-desativaca
 import { FiltrosUsuariosComponent, type FiltrosUsuarios } from '@/components/usuarios/filtros-usuarios';
 import { TabelaUsuarios } from '@/components/usuarios/tabela-usuarios';
 import { PaginacaoUsuarios } from '@/components/usuarios/paginacao-usuarios';
+import { useSonnerToast } from '@/hooks/use-sonner-toast';
 
 interface Usuario {
   id: string;
@@ -52,6 +53,7 @@ type ModalTipo = 'criar' | 'editar' | 'detalhes' | 'desativar' | null;
 
 export default function UsuariosPage() {
   const router = useRouter();
+  const { showInfo } = useSonnerToast();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -94,10 +96,15 @@ export default function UsuariosPage() {
       setCarregando(true);
       setErro(null);
 
-      // Usar valores dos parâmetros ou estados atuais
-      const paginaAtual = opcoes?.paginaAtual ?? paginacao.paginaAtual;
-      const itensPorPagina = opcoes?.itensPorPagina ?? paginacao.itensPorPagina;
-      const filtrosParaUsar = opcoes?.filtrosCustomizados ?? filtros;
+      // Usar valores dos parâmetros ou valores padrão
+      const paginaAtual = opcoes?.paginaAtual ?? 1;
+      const itensPorPagina = opcoes?.itensPorPagina ?? 10;
+      const filtrosParaUsar = opcoes?.filtrosCustomizados ?? {
+        busca: '',
+        tipoUsuario: '',
+        ativo: '',
+        supervisorId: '',
+      };
 
       const params = new URLSearchParams({
         pagina: paginaAtual.toString(),
@@ -137,6 +144,18 @@ export default function UsuariosPage() {
         temPaginaAnterior: data.data.paginacao.temPaginaAnterior,
       });
       
+      // Notificar sobre os resultados
+      if (data.data.usuarios.length === 0) {
+        showInfo('Nenhum usuário encontrado');
+      } else {
+        const temFiltros = Object.values(filtrosParaUsar).some(valor => valor && valor.trim() !== '');
+        if (temFiltros) {
+          showInfo(`${data.data.usuarios.length} usuário(s) encontrado(s) com os filtros aplicados`);
+        } else {
+          showInfo(`${data.data.usuarios.length} usuário(s) carregado(s)`);
+        }
+      }
+      
       // Verificar permissões baseado na resposta da API
       // Se conseguiu acessar a API, tem pelo menos permissão de visualização
       setPermissoes({
@@ -152,24 +171,28 @@ export default function UsuariosPage() {
     } finally {
       setCarregando(false);
     }
-  }, [router]);
+  }, [router, showInfo]);
 
   // Efeito para carregar usuários na inicialização
   useEffect(() => {
-    carregarUsuarios();
+    carregarUsuarios({ paginaAtual: 1, itensPorPagina: 10 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Efeito para mudanças de filtros
   useEffect(() => {
     carregarUsuarios({ paginaAtual: 1, filtrosCustomizados: filtros });
-  }, [filtros.busca, filtros.tipoUsuario, filtros.ativo, filtros.supervisorId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtros]);
 
-  // Efeito para mudanças de paginação
-  useEffect(() => {
-    if (paginacao.paginaAtual > 1) { // Só executa para páginas diferentes da primeira
-      carregarUsuarios({ paginaAtual: paginacao.paginaAtual, itensPorPagina: paginacao.itensPorPagina });
-    }
-  }, [paginacao.paginaAtual, paginacao.itensPorPagina]);
+  // Função para mudança de paginação (chamada diretamente pelos componentes)
+  const handlePaginacaoChange = useCallback((novaPagina: number, novoLimite?: number) => {
+    carregarUsuarios({ 
+      paginaAtual: novaPagina, 
+      itensPorPagina: novoLimite || paginacao.itensPorPagina,
+      filtrosCustomizados: filtros
+    });
+  }, [carregarUsuarios, paginacao.itensPorPagina, filtros]);
 
   // Funções de manipulação dos modais
   const abrirModal = (tipo: ModalTipo, usuario?: Usuario) => {
@@ -184,14 +207,14 @@ export default function UsuariosPage() {
     setUsuarioSelecionado(null);
   };
 
-  const handleSalvarUsuario = () => {
+  const handleUsuarioSalvo = () => {
     fecharModal();
-    carregarUsuarios({ paginaAtual: paginacao.paginaAtual });
+    handlePaginacaoChange(paginacao.paginaAtual, paginacao.itensPorPagina);
   };
 
   const handleDesativarUsuario = () => {
     fecharModal();
-    carregarUsuarios({ paginaAtual: paginacao.paginaAtual });
+    handlePaginacaoChange(paginacao.paginaAtual, paginacao.itensPorPagina);
   };
 
   // Funções de manipulação de filtros e paginação
@@ -211,15 +234,11 @@ export default function UsuariosPage() {
   };
 
   const handlePaginaChange = (novaPagina: number) => {
-    setPaginacao(prev => ({ ...prev, paginaAtual: novaPagina }));
+    handlePaginacaoChange(novaPagina);
   };
 
   const handleItensPorPaginaChange = (novosItens: number) => {
-    setPaginacao(prev => ({
-      ...prev,
-      itensPorPagina: novosItens,
-      paginaAtual: 1,
-    }));
+    handlePaginacaoChange(1, novosItens);
   };
 
   // As permissões agora são gerenciadas pelo estado local
@@ -326,7 +345,7 @@ export default function UsuariosPage() {
             <DialogTitle>Criar Novo Usuário</DialogTitle>
           </DialogHeader>
           <FormularioUsuario
-            onSalvar={handleSalvarUsuario}
+            onSalvar={handleUsuarioSalvo}
             onCancelar={fecharModal}
           />
         </DialogContent>
@@ -339,7 +358,7 @@ export default function UsuariosPage() {
           </DialogHeader>
           <FormularioUsuario
             usuario={usuarioSelecionado}
-            onSalvar={handleSalvarUsuario}
+            onSalvar={handleUsuarioSalvo}
             onCancelar={fecharModal}
           />
         </DialogContent>

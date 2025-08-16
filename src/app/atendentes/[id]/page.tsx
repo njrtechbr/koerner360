@@ -5,7 +5,7 @@
 
 import { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
-import { auth } from '../../../../auth.ts';
+import { auth } from '../../../../auth';
 import { TipoUsuario } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { DetalhesAtendente } from '@/components/atendentes/detalhes-atendente';
@@ -14,7 +14,7 @@ import { FormularioAtendente } from '@/components/atendentes/formulario-atendent
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, User, Edit, History, BarChart3 } from 'lucide-react';
+import { ArrowLeft, User, Edit, History } from 'lucide-react';
 import Link from 'next/link';
 import { formatarCPF, formatarTelefone } from '@/lib/validations/atendente';
 
@@ -40,7 +40,7 @@ async function buscarAtendente(id: string) {
           select: {
             id: true,
             acao: true,
-            detalhes: true,
+            dadosNovos: true,
             criadoEm: true,
             usuario: {
               select: {
@@ -65,7 +65,8 @@ async function buscarAtendente(id: string) {
     return {
       ...atendente,
       cpf: formatarCPF(atendente.cpf),
-      telefone: formatarTelefone(atendente.telefone)
+      telefone: formatarTelefone(atendente.telefone),
+      avatarUrl: atendente.avatarUrl || undefined
     };
   } catch (error) {
     console.error('Erro ao buscar atendente:', error);
@@ -103,7 +104,7 @@ export default async function AtendentePage({ params, searchParams }: PageProps)
   }
 
   // Verificar permissões
-  if (session.user.tipoUsuario === TipoUsuario.ATENDENTE) {
+  if (session.user.userType === TipoUsuario.ATENDENTE) {
     redirect('/dashboard');
   }
 
@@ -121,7 +122,7 @@ export default async function AtendentePage({ params, searchParams }: PageProps)
       {/* Cabeçalho da página */}
       <div className="flex items-center gap-4">
         <Button variant="outline" size="icon" asChild>
-          <Link href="/atendentes">
+          <Link href="/atendentes" prefetch={false}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
@@ -138,19 +139,19 @@ export default async function AtendentePage({ params, searchParams }: PageProps)
       <Tabs value={tabAtiva} className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="detalhes" asChild>
-            <Link href={`/atendentes/${params.id}?tab=detalhes`} className="flex items-center gap-2">
+            <Link href={`/atendentes/${params.id}?tab=detalhes`} prefetch={false} className="flex items-center gap-2">
               <User className="h-4 w-4" />
               Detalhes
             </Link>
           </TabsTrigger>
           <TabsTrigger value="editar" asChild>
-            <Link href={`/atendentes/${params.id}?tab=editar`} className="flex items-center gap-2">
+            <Link href={`/atendentes/${params.id}?tab=editar`} prefetch={false} className="flex items-center gap-2">
               <Edit className="h-4 w-4" />
               Editar
             </Link>
           </TabsTrigger>
           <TabsTrigger value="historico" asChild>
-            <Link href={`/atendentes/${params.id}?tab=historico`} className="flex items-center gap-2">
+            <Link href={`/atendentes/${params.id}?tab=historico`} prefetch={false} className="flex items-center gap-2">
               <History className="h-4 w-4" />
               Histórico
             </Link>
@@ -174,21 +175,7 @@ export default async function AtendentePage({ params, searchParams }: PageProps)
               <CardContent>
                 <FormularioAtendente 
                   modo="editar" 
-                  atendenteId={atendente.id}
-                  dadosIniciais={{
-                    nome: atendente.nome,
-                    email: atendente.email,
-                    status: atendente.status,
-                    avatarUrl: atendente.avatarUrl || '',
-                    telefone: atendente.telefone,
-                    portaria: atendente.portaria,
-                    dataAdmissao: atendente.dataAdmissao.toISOString().split('T')[0],
-                    dataNascimento: atendente.dataNascimento.toISOString().split('T')[0],
-                    rg: atendente.rg,
-                    cpf: atendente.cpf.replace(/\D/g, ''), // CPF sem formatação para o formulário
-                    setor: atendente.setor,
-                    cargo: atendente.cargo
-                  }}
+                  atendente={atendente}
                 />
               </CardContent>
             </Card>
@@ -224,17 +211,17 @@ export default async function AtendentePage({ params, searchParams }: PageProps)
                             {log.acao === 'SOFT_DELETE' && 'Inativação'}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            por {log.usuario.nome}
+                            por {log.usuario?.nome || 'Sistema'}
                           </span>
                         </div>
                         <span className="text-xs text-muted-foreground">
                           {new Date(log.criadoEm).toLocaleString('pt-BR')}
                         </span>
                       </div>
-                      {log.detalhes && (
+                      {log.dadosNovos && (
                         <div className="text-sm text-muted-foreground">
                           <pre className="whitespace-pre-wrap font-mono text-xs bg-muted p-2 rounded">
-                            {JSON.stringify(log.detalhes, null, 2)}
+                            {JSON.stringify(log.dadosNovos, null, 2)}
                           </pre>
                         </div>
                       )}

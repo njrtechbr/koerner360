@@ -4,7 +4,6 @@
  */
 
 import { z } from 'zod';
-import { StatusAtendente } from '@/types/atendente';
 
 // Regex para validação de CPF
 const cpfRegex = /^\d{3}\.\d{3}\.\d{3}-\d{2}$|^\d{11}$/;
@@ -29,9 +28,12 @@ export const atendenteBaseSchema = z.object({
     .max(255, 'Email deve ter no máximo 255 caracteres')
     .toLowerCase(),
   
-  status: z.nativeEnum(StatusAtendente, {
-    errorMap: () => ({ message: 'Status inválido' })
-  }),
+  status: z.nativeEnum({
+    ATIVO: 'ATIVO',
+    FERIAS: 'FERIAS', 
+    AFASTADO: 'AFASTADO',
+    INATIVO: 'INATIVO'
+  } as const),
   
   avatarUrl: z
     .string()
@@ -76,7 +78,8 @@ export const atendenteBaseSchema = z.object({
     .string()
     .max(1000, 'Observações devem ter no máximo 1000 caracteres')
     .optional()
-    .or(z.literal('')),
+    .or(z.literal(''))
+    .or(z.null()),
   
   rg: z
     .string()
@@ -109,7 +112,12 @@ export const atualizarAtendenteSchema = atendenteBaseSchema.partial();
 // Schema para filtros de busca
 export const filtrosAtendenteSchema = z.object({
   search: z.string().optional(),
-  status: z.nativeEnum(StatusAtendente).optional(),
+  status: z.nativeEnum({
+    ATIVO: 'ATIVO',
+    FERIAS: 'FERIAS',
+    AFASTADO: 'AFASTADO', 
+    INATIVO: 'INATIVO'
+  } as const).optional(),
   setor: z.string().optional(),
   cargo: z.string().optional(),
   portaria: z.string().optional(),

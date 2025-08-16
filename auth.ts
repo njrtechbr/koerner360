@@ -17,6 +17,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             return null
           }
 
+          const email = credentials.email as string;
+          const password = credentials.password as string;
+
           const usuarios = await prisma.$queryRaw<Array<{
             id: string;
             nome: string;
@@ -28,7 +31,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           }>>`
             SELECT id, nome, email, senha, "tipoUsuario", ativo, "supervisorId"
             FROM usuarios 
-            WHERE email = ${credentials.email} AND ativo = true
+            WHERE email = ${email} AND ativo = true
             LIMIT 1
           `;
 
@@ -43,7 +46,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           }
 
           const senhaValida = await bcrypt.compare(
-            credentials.password,
+            password,
             user.senha
           )
 

@@ -35,6 +35,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import { useSonnerToast } from '@/hooks/use-sonner-toast';
 
 interface FiltrosAtendentesProps {
   filtros: FiltrosAtendente;
@@ -63,6 +64,7 @@ export function FiltrosAtendentes({
   onFiltroChange,
   carregando = false
 }: FiltrosAtendentesProps) {
+  const { showInfo } = useSonnerToast();
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
   const [filtrosLocais, setFiltrosLocais] = useState<FiltrosAtendente>(filtros);
 
@@ -87,6 +89,7 @@ export function FiltrosAtendentes({
   const limparFiltros = () => {
     setFiltrosLocais(FILTROS_INICIAIS);
     onFiltroChange(FILTROS_INICIAIS);
+    showInfo('Todos os filtros foram removidos');
   };
 
   /**

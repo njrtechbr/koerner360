@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { auth } from '../../../../auth.ts';
+import { auth } from '@/auth';
 import { z } from 'zod';
+import { 
+  createSuccessResponse, 
+  createErrorResponse, 
+  createPaginatedResponse,
+  validateAuthentication,
+  validatePermissions,
+  ErrorCodes 
+} from '@/lib/api-response';
+import { TipoUsuario } from '@prisma/client';
 
 // Schema de validação para criar changelog
 const criarChangelogSchema = z.object({
@@ -114,26 +123,22 @@ export async function GET(request: NextRequest) {
     
     const totalPaginas = Math.ceil(total / limite);
     
-    return NextResponse.json({
-      success: true,
-      data: {
-        changelogs,
-        paginacao: {
-          paginaAtual: pagina,
-          itensPorPagina: limite,
-          totalItens: total,
-          totalPaginas,
-          temProximaPagina: pagina < totalPaginas,
-          temPaginaAnterior: pagina > 1,
-        },
-      },
-      timestamp: new Date().toISOString(),
-    });
+    return createPaginatedResponse(
+      changelogs,
+      {
+        paginaAtual: pagina,
+        itensPorPagina: limite,
+        totalItens: total,
+        totalPaginas,
+        temProximaPagina: pagina < totalPaginas,
+        temPaginaAnterior: pagina > 1,
+      }
+    );
   } catch (error) {
     console.error('Erro ao buscar changelogs:', error);
-    return NextResponse.json(
-      { erro: 'Erro interno do servidor' },
-      { status: 500 }
+    return createErrorResponse(
+      ErrorCodes.INTERNAL_ERROR,
+      'Erro interno do servidor'
     );
   }
 }
@@ -143,19 +148,15 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     
-    if (!session?.user) {
-      return NextResponse.json(
-        { erro: 'Não autorizado' },
-        { status: 401 }
-      );
+    const authResult = validateAuthentication(session);
+    if (authResult) {
+      return authResult;
     }
-    
+
     // Apenas admins podem criar changelogs
-    if (session.user.userType !== 'ADMIN') {
-      return NextResponse.json(
-        { erro: 'Acesso negado. Apenas administradores podem criar changelogs.' },
-        { status: 403 }
-      );
+    const permissionResult = validatePermissions(session?.user?.userType || '', [TipoUsuario.ADMIN]);
+    if (permissionResult) {
+      return permissionResult;
     }
     
     const body = await request.json();
@@ -167,9 +168,9 @@ export async function POST(request: NextRequest) {
     });
     
     if (versaoExistente) {
-      return NextResponse.json(
-        { erro: 'Versão já existe' },
-        { status: 400 }
+      return createErrorResponse(
+        ErrorCodes.VALIDATION_ERROR,
+        'Versão já existe'
       );
     }
     
@@ -183,7 +184,7 @@ export async function POST(request: NextRequest) {
         categoria: dadosValidados.categoria,
         prioridade: dadosValidados.prioridade,
         publicado: dadosValidados.publicado,
-        autorId: session.user.id,
+        autorId: session?.user?.id || '',
         itens: dadosValidados.itens ? {
           create: dadosValidados.itens
         } : undefined
@@ -204,19 +205,23 @@ export async function POST(request: NextRequest) {
       }
     });
     
-    return NextResponse.json(changelog, { status: 201 });
+    return createSuccessResponse(
+      changelog,
+      'Changelog criado com sucesso'
+    );
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { erro: 'Dados inválidos', detalhes: error.issues },
-        { status: 400 }
+      return createErrorResponse(
+        ErrorCodes.VALIDATION_ERROR,
+        'Dados inválidos',
+        error.issues
       );
     }
     
     console.error('Erro ao criar changelog:', error);
-    return NextResponse.json(
-      { erro: 'Erro interno do servidor' },
-      { status: 500 }
+    return createErrorResponse(
+      ErrorCodes.INTERNAL_ERROR,
+      'Erro interno do servidor'
     );
   }
 }

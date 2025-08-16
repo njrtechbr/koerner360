@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,7 +35,7 @@ interface DetalhesUsuarioProps {
   onFechar: () => void;
 }
 
-export function DetalhesUsuario({ usuarioId, onEditar, onFechar }: DetalhesUsuarioProps) {
+function DetalhesUsuarioComponent({ usuarioId, onEditar, onFechar }: DetalhesUsuarioProps) {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -270,3 +270,5 @@ export function DetalhesUsuario({ usuarioId, onEditar, onFechar }: DetalhesUsuar
     </div>
   );
 }
+
+export const DetalhesUsuario = memo(DetalhesUsuarioComponent);

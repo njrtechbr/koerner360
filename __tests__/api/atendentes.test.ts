@@ -154,6 +154,8 @@ describe('/api/atendentes', () => {
       telefone: '(11) 88888-8888',
       dataAdmissao: '2024-02-01',
       status: 'ATIVO',
+      endereco: 'Rua dos Testes, 123 - Centro',
+      observacoes: 'Atendente criada para testes',
     };
 
     it('deve criar atendente com sucesso', async () => {

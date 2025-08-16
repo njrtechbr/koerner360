@@ -5,8 +5,7 @@ import { MainLayout } from '@/components/layout/main-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { Users, BarChart3, MessageSquare, TrendingUp } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-
+import { TipoUsuario } from '@prisma/client';
 // Dados de exemplo para os gráficos
 
 
@@ -152,7 +151,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Gráfico de Atividade */}
-        {(session?.user?.userType === 'ADMIN' || session?.user?.userType === 'SUPERVISOR') && (
+        {(session?.user?.userType === 'admin' || session?.user?.userType === 'supervisor') && (
           <Card>
             <CardHeader>
               <CardTitle>Atividade do Sistema</CardTitle>
@@ -180,7 +179,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {session?.user?.userType === 'ADMIN' && (
+              {session?.user?.userType === 'admin' && (
                 <>
                   <div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
                     <h3 className="font-medium">Gerenciar Usuários</h3>

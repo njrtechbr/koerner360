@@ -4,17 +4,19 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { 
   Atendente, 
-  AtendenteFormData, 
+  AtendenteFormData,
+  AtendenteFormDataParcial, 
   StatusAtendente,
   STATUS_ATENDENTE_LABELS,
   STATUS_ATENDENTE_CORES 
 } from '@/types/atendente';
+import type { StatusAtendente as PrismaStatusAtendente } from '@prisma/client';
 import { 
   criarAtendenteSchema, 
   atualizarAtendenteSchema 
@@ -22,7 +24,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -42,11 +44,10 @@ import {
 } from '@/components/ui/form';
 import { Badge } from '@/components/ui/badge';
 import { UploadFoto } from '@/components/ui/upload-foto';
-import { useToast } from '@/hooks/use-toast';
+import { useSonnerToast } from '@/hooks/use-sonner-toast';
 import { 
   Save, 
   ArrowLeft, 
-  Upload, 
   User, 
   Mail, 
   Phone, 
@@ -67,24 +68,24 @@ interface FormularioAtendenteProps {
 /**
  * Componente de formulário para atendentes
  */
-export function FormularioAtendente({
+function FormularioAtendenteComponent({
   atendente,
   modo,
   onSucesso,
   onCancelar
 }: FormularioAtendenteProps) {
   const router = useRouter();
-  const { toast } = useToast();
+  const { showSuccess, showError } = useSonnerToast();
   const [carregando, setCarregando] = useState(false);
   const [fotoUrl, setFotoUrl] = useState<string | null>(
-    atendente?.foto_url || null
+    atendente?.avatarUrl || null
   );
 
   // Configurar schema de validação baseado no modo
   const schema = modo === 'criar' ? criarAtendenteSchema : atualizarAtendenteSchema;
 
   // Configurar formulário
-  const form = useForm<AtendenteFormData>({
+  const form = useForm<AtendenteFormData | AtendenteFormDataParcial>({
     resolver: zodResolver(schema),
     defaultValues: {
       nome: atendente?.nome || '',
@@ -96,13 +97,13 @@ export function FormularioAtendente({
       setor: atendente?.setor || '',
       cargo: atendente?.cargo || '',
       portaria: atendente?.portaria || '',
-      dataAdmissao: atendente?.data_admissao 
-        ? new Date(atendente.data_admissao).toISOString().split('T')[0] 
+      dataAdmissao: atendente?.dataAdmissao 
+        ? new Date(atendente.dataAdmissao).toISOString().split('T')[0] 
         : '',
-      dataNascimento: atendente?.data_nascimento 
-        ? new Date(atendente.data_nascimento).toISOString().split('T')[0] 
+      dataNascimento: atendente?.dataNascimento 
+        ? new Date(atendente.dataNascimento).toISOString().split('T')[0] 
         : '',
-      status: atendente?.status || StatusAtendente.ATIVO,
+      status: (atendente?.status || 'ATIVO') as PrismaStatusAtendente,
       observacoes: atendente?.observacoes || ''
     }
   });
@@ -110,7 +111,7 @@ export function FormularioAtendente({
   /**
    * Submeter formulário
    */
-  const onSubmit = async (dados: AtendenteFormData) => {
+  const onSubmit = useCallback(async (dados: AtendenteFormData | AtendenteFormDataParcial) => {
     try {
       setCarregando(true);
 
@@ -134,12 +135,11 @@ export function FormularioAtendente({
         throw new Error(resultado.error || 'Erro ao salvar atendente');
       }
 
-      toast({
-        title: modo === 'criar' ? 'Atendente criado' : 'Atendente atualizado',
-        description: modo === 'criar' 
-          ? 'O atendente foi criado com sucesso.' 
-          : 'As informações do atendente foram atualizadas.',
-      });
+      showSuccess(
+        modo === 'criar' 
+          ? 'Atendente criado com sucesso! O atendente foi criado e está disponível no sistema.' 
+          : 'Atendente atualizado com sucesso! As informações do atendente foram atualizadas.'
+      );
 
       if (onSucesso) {
         onSucesso(resultado.data);
@@ -148,52 +148,40 @@ export function FormularioAtendente({
       }
     } catch (error) {
       console.error('Erro ao salvar atendente:', error);
-      toast({
-        title: 'Erro',
-        description: error instanceof Error ? error.message : 'Erro inesperado',
-        variant: 'destructive',
-      });
+      showError(
+        `Erro ao salvar atendente: ${error instanceof Error ? error.message : 'Erro inesperado ao processar a solicitação'}`
+      );
     } finally {
       setCarregando(false);
     }
-  };
+  }, [modo, atendente?.id, onSucesso, router, showSuccess, showError]);
 
   /**
    * Cancelar edição
    */
-  const handleCancelar = () => {
+  const handleCancelar = useCallback(() => {
     if (onCancelar) {
       onCancelar();
     } else {
       router.back();
     }
-  };
+  }, [onCancelar, router]);
 
   /**
    * Upload de foto
    */
-  const handleUploadCompleto = (url: string) => {
+  const handleUploadCompleto = useCallback((url: string) => {
     setFotoUrl(url);
-  };
+  }, []);
 
   /**
    * Remover foto
    */
-  const handleRemoverFoto = () => {
+  const handleRemoverFoto = useCallback(() => {
     setFotoUrl(null);
-  };
+  }, []);
 
-  /**
-   * Obter iniciais do nome
-   */
-  const obterIniciais = (nome: string) => {
-    return nome
-      .split(' ')
-      .map(parte => parte.charAt(0))
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
+
 
   return (
     <div className="space-y-6">
@@ -236,7 +224,7 @@ export function FormularioAtendente({
             </CardHeader>
             <CardContent>
               <UploadFoto
-                fotoUrl={fotoUrl}
+                fotoUrl={fotoUrl || undefined}
                 nome={form.watch('nome') || 'Atendente'}
                 onUploadCompleto={handleUploadCompleto}
                 onRemover={handleRemoverFoto}
@@ -494,7 +482,8 @@ export function FormularioAtendente({
                       <Textarea 
                         placeholder="Digite observações adicionais sobre o atendente..."
                         className="min-h-[100px]"
-                        {...field} 
+                        {...field}
+                        value={field.value || ''}
                       />
                     </FormControl>
                     <FormDescription>
@@ -534,3 +523,5 @@ export function FormularioAtendente({
     </div>
   );
 }
+
+export const FormularioAtendente = memo(FormularioAtendenteComponent);

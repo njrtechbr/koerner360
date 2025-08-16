@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '../../../../auth.ts';
+import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { 
   criarAtendenteSchema, 
@@ -15,6 +15,15 @@ import {
 } from '@/lib/validations/atendente';
 import { StatusAtendente } from '@/types/atendente';
 import { TipoUsuario } from '@prisma/client';
+import { 
+  createSuccessResponse, 
+  createErrorResponse, 
+  createPaginatedResponse,
+  validateAuthentication,
+  validatePermissions,
+  ErrorCodes 
+} from '@/lib/api-response';
+
 
 /**
  * GET /api/atendentes
@@ -24,19 +33,15 @@ export async function GET(request: NextRequest) {
   try {
     const session = await auth();
     
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: 'Não autorizado' },
-        { status: 401 }
-      );
+    const authResult = validateAuthentication(session);
+    if (authResult) {
+      return authResult;
     }
 
     // Verificar permissões - apenas admin e supervisor podem listar atendentes
-    if (session.user.userType === 'ATENDENTE') {
-      return NextResponse.json(
-        { success: false, error: 'Acesso negado' },
-        { status: 403 }
-      );
+    const permissionResult = validatePermissions(session?.user?.userType || '', [TipoUsuario.ADMIN, TipoUsuario.SUPERVISOR]);
+    if (permissionResult) {
+      return permissionResult;
     }
 
     const { searchParams } = new URL(request.url);
@@ -47,7 +52,7 @@ export async function GET(request: NextRequest) {
     const { search, status, setor, cargo, portaria, pagina, limite, coluna, direcao } = validatedParams;
 
     // Construir filtros do Prisma
-    const where: any = {};
+    const where: Record<string, unknown> = {};
     
     if (search) {
       where.OR = [
@@ -119,35 +124,33 @@ export async function GET(request: NextRequest) {
       telefone: formatarTelefone(atendente.telefone)
     }));
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        atendentes: atendentesFormatados,
-        paginacao: {
-          paginaAtual: pagina,
-          totalPaginas,
-          totalItens,
-          itensPorPagina: limite,
-          temProximaPagina,
-          temPaginaAnterior
-        }
+    return createPaginatedResponse(
+      atendentesFormatados,
+      {
+        paginaAtual: pagina,
+        totalPaginas,
+        totalItens,
+        itensPorPagina: limite,
+        temProximaPagina,
+        temPaginaAnterior
       },
-      timestamp: new Date().toISOString()
-    });
+      'atendentes'
+    );
 
   } catch (error) {
     console.error('Erro ao buscar atendentes:', error);
     
     if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json(
-        { success: false, error: 'Parâmetros inválidos', details: error.message },
-        { status: 400 }
+      return createErrorResponse(
+        ErrorCodes.VALIDATION_ERROR,
+        'Parâmetros inválidos',
+        error.message
       );
     }
     
-    return NextResponse.json(
-      { success: false, error: 'Erro interno do servidor' },
-      { status: 500 }
+    return createErrorResponse(
+      ErrorCodes.INTERNAL_ERROR,
+      'Erro interno do servidor'
     );
   }
 }
@@ -160,19 +163,15 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: 'Não autorizado' },
-        { status: 401 }
-      );
+    const authResult = validateAuthentication(session);
+    if (authResult) {
+      return authResult;
     }
 
     // Verificar permissões - apenas admin e supervisor podem criar atendentes
-    if (session.user.userType === 'ATENDENTE') {
-      return NextResponse.json(
-        { success: false, error: 'Acesso negado' },
-        { status: 403 }
-      );
+    const permissionResult = validatePermissions(session?.user?.userType || '', [TipoUsuario.ADMIN, TipoUsuario.SUPERVISOR]);
+    if (permissionResult) {
+      return permissionResult;
     }
 
     const body = await request.json();
@@ -186,9 +185,9 @@ export async function POST(request: NextRequest) {
     });
     
     if (emailExistente) {
-      return NextResponse.json(
-        { success: false, error: 'Email já está em uso' },
-        { status: 409 }
+      return createErrorResponse(
+        ErrorCodes.VALIDATION_ERROR,
+        'Email já está em uso'
       );
     }
     
@@ -198,9 +197,9 @@ export async function POST(request: NextRequest) {
     });
     
     if (cpfExistente) {
-      return NextResponse.json(
-        { success: false, error: 'CPF já está em uso' },
-        { status: 409 }
+      return createErrorResponse(
+        ErrorCodes.VALIDATION_ERROR,
+        'CPF já está em uso'
       );
     }
     
@@ -210,9 +209,9 @@ export async function POST(request: NextRequest) {
     });
     
     if (rgExistente) {
-      return NextResponse.json(
-        { success: false, error: 'RG já está em uso' },
-        { status: 409 }
+      return createErrorResponse(
+        ErrorCodes.VALIDATION_ERROR,
+        'RG já está em uso'
       );
     }
 
@@ -230,7 +229,9 @@ export async function POST(request: NextRequest) {
         rg: dadosValidados.rg,
         cpf: dadosValidados.cpf,
         setor: dadosValidados.setor,
-        cargo: dadosValidados.cargo
+        cargo: dadosValidados.cargo,
+        endereco: dadosValidados.endereco,
+        observacoes: dadosValidados.observacoes
       }
     });
 
@@ -238,16 +239,16 @@ export async function POST(request: NextRequest) {
     await prisma.auditLog.create({
       data: {
         acao: 'CREATE',
-        entidade: 'Atendente',
-        entidadeId: novoAtendente.id,
-        usuarioId: session.user.id,
+        nomeTabela: 'Atendente',
+        registroId: novoAtendente.id,
+        usuarioId: session?.user?.id || '',
         atendenteId: novoAtendente.id,
-        detalhes: {
+        dadosNovos: JSON.stringify({
           nome: novoAtendente.nome,
           email: novoAtendente.email,
           setor: novoAtendente.setor,
           cargo: novoAtendente.cargo
-        }
+        })
       }
     });
 
@@ -258,27 +259,22 @@ export async function POST(request: NextRequest) {
       telefone: formatarTelefone(novoAtendente.telefone)
     };
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        atendente: atendenteFormatado
-      },
-      timestamp: new Date().toISOString()
-    }, { status: 201 });
+    return createSuccessResponse(atendenteFormatado, 'Atendente criado com sucesso', 201);
 
   } catch (error) {
     console.error('Erro ao criar atendente:', error);
     
     if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json(
-        { success: false, error: 'Dados inválidos', details: error.message },
-        { status: 400 }
+      return createErrorResponse(
+        ErrorCodes.VALIDATION_ERROR,
+        'Dados inválidos',
+        error.message
       );
     }
     
-    return NextResponse.json(
-      { success: false, error: 'Erro interno do servidor' },
-      { status: 500 }
+    return createErrorResponse(
+      ErrorCodes.INTERNAL_ERROR,
+      'Erro interno do servidor'
     );
   }
 }

@@ -3,6 +3,9 @@
  * Baseado na documentação da tabela atendentes do Supabase
  */
 
+// Importar o tipo do Prisma para compatibilidade
+import type { StatusAtendente as PrismaStatusAtendente } from '@prisma/client';
+
 // Enum para status do atendente
 export enum StatusAtendente {
   ATIVO = 'ATIVO',
@@ -11,14 +14,17 @@ export enum StatusAtendente {
   INATIVO = 'INATIVO'
 }
 
+// Garantir compatibilidade entre os tipos
+export type StatusAtendenteType = PrismaStatusAtendente;
+
 // Interface principal do atendente
 export interface Atendente {
   id: string;
   nome: string;
   email: string;
-  status: StatusAtendente;
+  status: PrismaStatusAtendente;
   avatarUrl?: string;
-  foto?: Buffer;
+  foto?: Uint8Array | null;
   telefone: string;
   portaria: string;
   dataAdmissao: Date;
@@ -27,6 +33,9 @@ export interface Atendente {
   cpf: string;
   setor: string;
   cargo: string;
+  endereco: string;
+  observacoes?: string | null;
+  usuarioId?: string | null;
   criadoEm: Date;
   atualizadoEm: Date;
 }
@@ -35,8 +44,8 @@ export interface Atendente {
 export interface CriarAtendenteData {
   nome: string;
   email: string;
-  status?: StatusAtendente;
-  avatarUrl?: string;
+  status?: PrismaStatusAtendente;
+  avatarUrl?: string | null;
   telefone: string;
   portaria: string;
   dataAdmissao: Date;
@@ -45,14 +54,16 @@ export interface CriarAtendenteData {
   cpf: string;
   setor: string;
   cargo: string;
+  endereco: string;
+  observacoes?: string | null;
 }
 
-// Interface para atualização de atendente (todos os campos opcionais)
+// Interface para atualização de atendente (campos opcionais)
 export interface AtualizarAtendenteData {
   nome?: string;
   email?: string;
-  status?: StatusAtendente;
-  avatarUrl?: string;
+  status?: PrismaStatusAtendente;
+  avatarUrl?: string | null;
   telefone?: string;
   portaria?: string;
   dataAdmissao?: Date;
@@ -61,13 +72,16 @@ export interface AtualizarAtendenteData {
   cpf?: string;
   setor?: string;
   cargo?: string;
+  endereco?: string;
+  observacoes?: string | null;
+  usuarioId?: string | null;
 }
 
-// Interface para formulário de atendente
+// Interface para dados de formulário (com strings para datas)
 export interface AtendenteFormData {
   nome: string;
   email: string;
-  status: StatusAtendente;
+  status: PrismaStatusAtendente;
   avatarUrl?: string;
   telefone: string;
   portaria: string;
@@ -78,14 +92,32 @@ export interface AtendenteFormData {
   setor: string;
   cargo: string;
   endereco: string;
-  observacoes?: string;
+  observacoes?: string | null;
+}
+
+// Interface para dados de formulário com campos opcionais (para edição)
+export interface AtendenteFormDataParcial {
+  nome?: string;
+  email?: string;
+  status?: PrismaStatusAtendente;
+  avatarUrl?: string;
+  telefone?: string;
+  portaria?: string;
+  dataAdmissao?: string;
+  dataNascimento?: string;
+  rg?: string;
+  cpf?: string;
+  setor?: string;
+  cargo?: string;
+  endereco?: string;
+  observacoes?: string | null;
 }
 
 // Interface para filtros de busca
 export interface FiltrosAtendente {
   busca?: string;
   search?: string; // Compatibilidade com searchParams
-  status?: StatusAtendente;
+  status?: PrismaStatusAtendente;
   setor?: string;
   cargo?: string;
   portaria?: string;
@@ -155,7 +187,7 @@ export interface OrdenacaoAtendente {
 export interface EstatisticasAtendentes {
   totalAtendentes: number;
   atendentesMesAtual: number;
-  distribuicaoPorStatus: Record<StatusAtendente, number>;
+  distribuicaoPorStatus: Record<PrismaStatusAtendente, number>;
   distribuicaoPorSetor: Record<string, number>;
   distribuicaoPorCargo: Record<string, number>;
   distribuicaoPorPortaria: Record<string, number>;
@@ -165,16 +197,45 @@ export interface EstatisticasAtendentes {
   }>;
 }
 
-// Labels para exibição
-export const StatusAtendenteLabels: Record<StatusAtendente, string> = {
+/**
+ * Interface para logs de auditoria
+ */
+export interface LogAuditoria {
+  id: string;
+  usuarioId?: string | null;
+  atendenteId?: string | null;
+  acao: string;
+  nomeTabela?: string | null;
+  registroId?: string | null;
+  dadosAnteriores?: Record<string, unknown> | null;
+  dadosNovos?: Record<string, unknown> | null;
+  enderecoIp?: string | null;
+  userAgent?: string | null;
+  criadoEm: Date;
+  usuario: {
+    id: string;
+    nome: string;
+    email: string;
+    foto_url?: string;
+  } | null;
+  atendente?: {
+    id: string;
+    nome: string;
+  } | null;
+  // Propriedade calculada para exibição (opcional)
+  detalhes?: string;
+}
+
+// Labels para exibição dos status
+export const StatusAtendenteLabels: Record<PrismaStatusAtendente, string> = {
   [StatusAtendente.ATIVO]: 'Ativo',
   [StatusAtendente.FERIAS]: 'Férias',
   [StatusAtendente.AFASTADO]: 'Afastado',
   [StatusAtendente.INATIVO]: 'Inativo'
 };
 
-// Cores para status
-export const StatusAtendenteCores: Record<StatusAtendente, string> = {
+// Cores para exibição dos status
+export const StatusAtendenteCores: Record<PrismaStatusAtendente, string> = {
   [StatusAtendente.ATIVO]: 'bg-green-100 text-green-800',
   [StatusAtendente.FERIAS]: 'bg-blue-100 text-blue-800',
   [StatusAtendente.AFASTADO]: 'bg-yellow-100 text-yellow-800',

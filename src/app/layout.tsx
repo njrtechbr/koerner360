@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { auth } from '@/auth'
 import { Providers } from "@/components/providers/session-provider";
 import AuthErrorBoundary from "@/components/auth-error-boundary";
+import { Toaster } from 'sonner';
 import "./globals.css";
 
 const geistSans = Geist({
@@ -33,6 +34,19 @@ export default async function RootLayout({
         <AuthErrorBoundary>
           <Providers session={session}>
             {children}
+            <Toaster 
+              position="top-right"
+              richColors
+              closeButton
+              duration={4000}
+              toastOptions={{
+                style: {
+                  background: 'hsl(var(--background))',
+                  border: '1px solid hsl(var(--border))',
+                  color: 'hsl(var(--foreground))',
+                },
+              }}
+            />
           </Providers>
         </AuthErrorBoundary>
       </body>

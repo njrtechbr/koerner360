@@ -5,7 +5,7 @@ export default auth((req) => {
   const { pathname } = req.nextUrl
 
   // Rotas públicas que não precisam de autenticação
-  const publicRoutes = ["/login", "/changelog", "/api/auth", "/test-session"]
+  const publicRoutes = ["/login", "/changelog", "/api/auth", "/test-session", "/test-fetch"]
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
 
   // Se é rota pública, permite acesso
@@ -33,7 +33,8 @@ export const config = {
      * - changelog (public changelog page)
      * - api/auth (NextAuth routes)
      * - test-session (página de teste)
+     * - test-fetch (página de teste de fetch)
      */
-    "/((?!_next/static|_next/image|favicon.ico|changelog|api/auth|test-session).*)",
+    "/((?!_next/static|_next/image|favicon.ico|changelog|api/auth|test-session|test-fetch).*)",
   ],
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { useSonnerToast } from '@/hooks/use-sonner-toast';
 
 // Schema removido - validação feita no backend
 
@@ -47,12 +48,13 @@ interface FormularioUsuarioProps {
   onCancelar: () => void;
 }
 
-export function FormularioUsuario({ usuario, onSalvar, onCancelar }: FormularioUsuarioProps) {
+function FormularioUsuarioComponent({ usuario, onSalvar, onCancelar }: FormularioUsuarioProps) {
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [supervisores, setSupervisores] = useState<Supervisor[]>([]);
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [carregandoSupervisores, setCarregandoSupervisores] = useState(false);
+  const { showSuccess, showError } = useSonnerToast();
 
   const isEdicao = !!usuario;
 
@@ -77,7 +79,7 @@ export function FormularioUsuario({ usuario, onSalvar, onCancelar }: FormularioU
   const tipoUsuarioSelecionado = watch('tipoUsuario');
 
   // Carregar supervisores
-  const carregarSupervisores = async () => {
+  const carregarSupervisores = useCallback(async () => {
     try {
       setCarregandoSupervisores(true);
       const response = await fetch('/api/usuarios?tipoUsuario=SUPERVISOR&ativo=true&limit=100');
@@ -85,17 +87,24 @@ export function FormularioUsuario({ usuario, onSalvar, onCancelar }: FormularioU
 
       if (response.ok) {
         setSupervisores(data.data.usuarios);
+        if (data.data.usuarios.length > 0) {
+          showSuccess(`${data.data.usuarios.length} supervisor(es) disponível(is)`);
+        } else {
+          showSuccess('Nenhum supervisor encontrado');
+        }
+      } else {
+        showError('Erro ao carregar supervisores');
       }
     } catch (error) {
       console.error('Erro ao carregar supervisores:', error);
     } finally {
       setCarregandoSupervisores(false);
     }
-  };
+  }, [showSuccess, showError]);
 
   useEffect(() => {
     carregarSupervisores();
-  }, []);
+  }, [carregarSupervisores]);
 
   // Reset form quando usuario muda
   useEffect(() => {
@@ -107,8 +116,9 @@ export function FormularioUsuario({ usuario, onSalvar, onCancelar }: FormularioU
         ativo: usuario.ativo,
         supervisorId: usuario.supervisorId || '',
       });
+      showSuccess(`Dados do usuário ${usuario.nome} carregados`);
     }
-  }, [usuario, reset]);
+  }, [usuario, reset, showSuccess]);
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -154,13 +164,23 @@ export function FormularioUsuario({ usuario, onSalvar, onCancelar }: FormularioU
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error?.message || 'Erro ao salvar usuário');
+        const errorMessage = result.error || 'Erro ao salvar usuário';
+        showError(errorMessage);
+        throw new Error(errorMessage);
       }
+
+      // Mostrar notificação de sucesso
+      const successMessage = isEdicao 
+        ? 'Usuário atualizado com sucesso!' 
+        : 'Usuário criado com sucesso!';
+      showSuccess(successMessage);
 
       onSalvar();
     } catch (error) {
       console.error('Erro ao salvar usuário:', error);
-      setErro(error instanceof Error ? error.message : 'Erro desconhecido');
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      setErro(errorMessage);
+      // Notificação de erro já foi mostrada acima
     } finally {
       setCarregando(false);
     }
@@ -319,3 +339,5 @@ export function FormularioUsuario({ usuario, onSalvar, onCancelar }: FormularioU
     </form>
   );
 }
+
+export const FormularioUsuario = memo(FormularioUsuarioComponent);

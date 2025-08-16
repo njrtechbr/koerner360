@@ -4,12 +4,12 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { 
-  Atendente, 
-  FiltrosAtendente, 
-  OrdenacaoAtendentes,
+import { useState, useCallback, memo } from 'react';
+import {
+  Atendente,
+  FiltrosAtendente,
+  OrdenacaoAtendente,
+  OrdenacaoColunaAtendente,
   PaginacaoAtendentes,
   STATUS_ATENDENTE_LABELS,
   STATUS_ATENDENTE_CORES
@@ -50,20 +50,22 @@ import {
   Eye, 
   Edit, 
   Trash2, 
-  Star,
   ArrowUpDown
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatarCPF, formatarTelefone } from '@/lib/validations/atendente';
+import { BotaoCriarUsuario } from './BotaoCriarUsuario';
+import { ModalVisualizarAtendente } from './ModalVisualizarAtendente';
+import { ModalEditarAtendente } from './ModalEditarAtendente';
 
 interface TabelaAtendentesProps {
   atendentes: Atendente[];
   filtros: FiltrosAtendente;
-  ordenacao: OrdenacaoAtendentes;
+  ordenacao: OrdenacaoAtendente;
   paginacao: PaginacaoAtendentes;
   carregando?: boolean;
   onFiltroChange: (filtros: FiltrosAtendente) => void;
-  onOrdenacaoChange: (ordenacao: OrdenacaoAtendentes) => void;
+  onOrdenacaoChange: (ordenacao: OrdenacaoAtendente) => void;
   onPaginacaoChange: (paginacao: Partial<PaginacaoAtendentes>) => void;
   onRecarregar: () => void;
 }
@@ -71,48 +73,47 @@ interface TabelaAtendentesProps {
 /**
  * Componente de tabela de atendentes
  */
-export function TabelaAtendentes({
+function TabelaAtendentesComponent({
   atendentes,
-  filtros,
   ordenacao,
   paginacao,
   carregando = false,
-  onFiltroChange,
   onOrdenacaoChange,
   onPaginacaoChange,
   onRecarregar
 }: TabelaAtendentesProps) {
-  const router = useRouter();
   const [atendenteParaExcluir, setAtendenteParaExcluir] = useState<Atendente | null>(null);
+  const [atendenteParaVisualizar, setAtendenteParaVisualizar] = useState<Atendente | null>(null);
+  const [atendenteParaEditar, setAtendenteParaEditar] = useState<Atendente | null>(null);
   const [excluindo, setExcluindo] = useState(false);
 
   /**
    * Alterar ordenação
    */
-  const alterarOrdenacao = (campo: keyof Atendente) => {
-    const novaOrdenacao: OrdenacaoAtendentes = {
-      campo,
-      direcao: ordenacao.campo === campo && ordenacao.direcao === 'asc' ? 'desc' : 'asc'
+  const alterarOrdenacao = useCallback((campo: keyof Atendente) => {
+    const novaOrdenacao: OrdenacaoAtendente = {
+      coluna: campo as OrdenacaoColunaAtendente,
+      direcao: ordenacao.coluna === campo && ordenacao.direcao === 'asc' ? 'desc' : 'asc'
     };
     onOrdenacaoChange(novaOrdenacao);
-  };
+  }, [ordenacao.coluna, ordenacao.direcao, onOrdenacaoChange]);
 
   /**
    * Obter ícone de ordenação
    */
-  const obterIconeOrdenacao = (campo: keyof Atendente) => {
-    if (ordenacao.campo !== campo) {
+  const obterIconeOrdenacao = useCallback((campo: keyof Atendente) => {
+    if (ordenacao.coluna !== campo) {
       return <ArrowUpDown className="ml-2 h-4 w-4" />;
     }
     return ordenacao.direcao === 'asc' 
       ? <ChevronUp className="ml-2 h-4 w-4" />
       : <ChevronDown className="ml-2 h-4 w-4" />;
-  };
+  }, [ordenacao.coluna, ordenacao.direcao]);
 
   /**
    * Excluir atendente
    */
-  const excluirAtendente = async (atendente: Atendente) => {
+  const excluirAtendente = useCallback(async (atendente: Atendente) => {
     setExcluindo(true);
     
     try {
@@ -144,19 +145,19 @@ export function TabelaAtendentes({
       setExcluindo(false);
       setAtendenteParaExcluir(null);
     }
-  };
+  }, [onRecarregar]);
 
   /**
    * Obter iniciais do nome
    */
-  const obterIniciais = (nome: string) => {
+  const obterIniciais = useCallback((nome: string) => {
     return nome
       .split(' ')
       .map(n => n[0])
       .join('')
       .toUpperCase()
       .slice(0, 2);
-  };
+  }, []);
 
 
 
@@ -329,17 +330,23 @@ export function TabelaAtendentes({
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Ações</DropdownMenuLabel>
                           <DropdownMenuItem
-                            onClick={() => router.push(`/atendentes/${atendente.id}`)}
+                            onClick={() => setAtendenteParaVisualizar(atendente)}
                           >
                             <Eye className="mr-2 h-4 w-4" />
                             Visualizar
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => router.push(`/atendentes/${atendente.id}?tab=editar`)}
+                            onClick={() => setAtendenteParaEditar(atendente)}
                           >
                             <Edit className="mr-2 h-4 w-4" />
                             Editar
                           </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <BotaoCriarUsuario 
+                            atendente={atendente} 
+                            onUsuarioCriado={onRecarregar}
+                            renderAsMenuItem
+                          />
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             onClick={() => setAtendenteParaExcluir(atendente)}
@@ -437,6 +444,23 @@ export function TabelaAtendentes({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Modal para visualizar atendente */}
+      <ModalVisualizarAtendente
+        atendente={atendenteParaVisualizar}
+        aberto={!!atendenteParaVisualizar}
+        onFechar={() => setAtendenteParaVisualizar(null)}
+      />
+
+      {/* Modal para editar atendente */}
+      <ModalEditarAtendente
+        atendente={atendenteParaEditar}
+        aberto={!!atendenteParaEditar}
+        onFechar={() => setAtendenteParaEditar(null)}
+        onAtendenteAtualizado={onRecarregar}
+      />
     </div>
   );
 }
+
+export const TabelaAtendentes = memo(TabelaAtendentesComponent);

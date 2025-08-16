@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Loader2, AlertTriangle } from 'lucide-react';
+import { useSonnerToast } from '@/hooks/use-sonner-toast';
 
 interface Usuario {
   id: string;
@@ -24,6 +25,7 @@ interface ConfirmarDesativacaoProps {
 export function ConfirmarDesativacao({ usuario, aberto, onConfirmar, onCancelar }: ConfirmarDesativacaoProps) {
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const { showSuccess, showError } = useSonnerToast();
 
   const handleConfirmar = async () => {
     if (!usuario) return;
@@ -42,13 +44,23 @@ export function ConfirmarDesativacao({ usuario, aberto, onConfirmar, onCancelar 
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error?.message || 'Erro ao desativar usuário');
+        const errorMessage = result.error || 'Erro ao processar usuário';
+        showError(errorMessage);
+        throw new Error(errorMessage);
       }
+
+      // Mostrar notificação de sucesso
+      const successMessage = usuario.ativo 
+        ? 'Usuário desativado com sucesso!' 
+        : 'Usuário ativado com sucesso!';
+      showSuccess(successMessage);
 
       onConfirmar();
     } catch (error) {
-      console.error('Erro ao desativar usuário:', error);
-      setErro(error instanceof Error ? error.message : 'Erro desconhecido');
+      console.error('Erro ao processar usuário:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      setErro(errorMessage);
+      // Notificação de erro já foi mostrada acima
     } finally {
       setCarregando(false);
     }

@@ -1,6 +1,7 @@
 import { signIn } from '@/auth';
-import { redirect } from 'next/navigation';
+
 import { AuthError } from 'next-auth';
+import { redirect } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,9 +20,10 @@ async function authenticate(formData: FormData) {
     if (error instanceof AuthError) {
       switch (error.type) {
         case 'CredentialsSignin':
-          return 'Credenciais inválidas.';
+          // Em caso de erro, redirecionar com parâmetro de erro
+          redirect('/login?error=CredentialsSignin');
         default:
-          return 'Algo deu errado.';
+          redirect('/login?error=Configuration');
       }
     }
     throw error;

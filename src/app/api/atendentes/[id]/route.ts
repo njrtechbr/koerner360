@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '../../../../../auth.ts';
+import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { 
   atualizarAtendenteSchema,
@@ -15,6 +15,14 @@ import {
 } from '@/lib/validations/atendente';
 import { StatusAtendente } from '@/types/atendente';
 import { TipoUsuario } from '@prisma/client';
+import {
+  createSuccessResponse,
+  createErrorResponse,
+  validateAuthentication,
+  validatePermissions,
+  ErrorCodes
+} from '@/lib/api-response';
+
 
 interface RouteParams {
   params: {
@@ -32,28 +40,26 @@ export async function GET(
 ) {
   try {
     const session = await auth();
-    
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: 'Não autorizado' },
-        { status: 401 }
-      );
+    const authResult = validateAuthentication(session);
+    if (authResult) {
+      return authResult;
     }
 
-    // Verificar permissões
-    if (session.user.userType === 'ATENDENTE') {
-      return NextResponse.json(
-        { success: false, error: 'Acesso negado' },
-        { status: 403 }
-      );
+    const permissionResult = validatePermissions(
+      session?.user?.userType || '',
+      [TipoUsuario.ADMIN, TipoUsuario.SUPERVISOR]
+    );
+    if (permissionResult) {
+      return permissionResult;
     }
 
     const { id } = params;
     
     if (!id) {
-      return NextResponse.json(
-        { success: false, error: 'ID do atendente é obrigatório' },
-        { status: 400 }
+      return createErrorResponse(
+        ErrorCodes.VALIDATION_ERROR,
+        'ID do atendente é obrigatório',
+        400
       );
     }
 
@@ -65,7 +71,7 @@ export async function GET(
           select: {
             id: true,
             acao: true,
-            detalhes: true,
+            dadosNovos: true,
             criadoEm: true,
             usuario: {
               select: {
@@ -83,9 +89,10 @@ export async function GET(
     });
 
     if (!atendente) {
-      return NextResponse.json(
-        { success: false, error: 'Atendente não encontrado' },
-        { status: 404 }
+      return createErrorResponse(
+        ErrorCodes.NOT_FOUND,
+        'Atendente não encontrado',
+        404
       );
     }
 
@@ -96,19 +103,14 @@ export async function GET(
       telefone: formatarTelefone(atendente.telefone)
     };
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        atendente: atendenteFormatado
-      },
-      timestamp: new Date().toISOString()
-    });
+    return createSuccessResponse({ atendente: atendenteFormatado });
 
   } catch (error) {
     console.error('Erro ao buscar atendente:', error);
-    return NextResponse.json(
-      { success: false, error: 'Erro interno do servidor' },
-      { status: 500 }
+    return createErrorResponse(
+      ErrorCodes.INTERNAL_ERROR,
+      'Erro interno do servidor',
+      500
     );
   }
 }
@@ -123,28 +125,26 @@ export async function PUT(
 ) {
   try {
     const session = await auth();
-    
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: 'Não autorizado' },
-        { status: 401 }
-      );
+    const authResult = validateAuthentication(session);
+    if (authResult) {
+      return authResult;
     }
 
-    // Verificar permissões
-    if (session.user.userType === 'ATENDENTE') {
-      return NextResponse.json(
-        { success: false, error: 'Acesso negado' },
-        { status: 403 }
-      );
+    const permissionResult = validatePermissions(
+      session?.user?.userType || '',
+      [TipoUsuario.ADMIN, TipoUsuario.SUPERVISOR]
+    );
+    if (permissionResult) {
+      return permissionResult;
     }
 
     const { id } = params;
     
     if (!id) {
-      return NextResponse.json(
-        { success: false, error: 'ID do atendente é obrigatório' },
-        { status: 400 }
+      return createErrorResponse(
+        ErrorCodes.VALIDATION_ERROR,
+        'ID do atendente é obrigatório',
+        400
       );
     }
 
@@ -154,9 +154,10 @@ export async function PUT(
     });
 
     if (!atendenteExistente) {
-      return NextResponse.json(
-        { success: false, error: 'Atendente não encontrado' },
-        { status: 404 }
+      return createErrorResponse(
+        ErrorCodes.NOT_FOUND,
+        'Atendente não encontrado',
+        404
       );
     }
 
@@ -172,9 +173,10 @@ export async function PUT(
       });
       
       if (emailExistente) {
-        return NextResponse.json(
-          { success: false, error: 'Email já está em uso' },
-          { status: 409 }
+        return createErrorResponse(
+          ErrorCodes.VALIDATION_ERROR,
+          'Email já está em uso',
+          409
         );
       }
     }
@@ -185,9 +187,10 @@ export async function PUT(
       });
       
       if (cpfExistente) {
-        return NextResponse.json(
-          { success: false, error: 'CPF já está em uso' },
-          { status: 409 }
+        return createErrorResponse(
+          ErrorCodes.VALIDATION_ERROR,
+          'CPF já está em uso',
+          409
         );
       }
     }
@@ -198,15 +201,16 @@ export async function PUT(
       });
       
       if (rgExistente) {
-        return NextResponse.json(
-          { success: false, error: 'RG já está em uso' },
-          { status: 409 }
+        return createErrorResponse(
+          ErrorCodes.VALIDATION_ERROR,
+          'RG já está em uso',
+          409
         );
       }
     }
 
     // Preparar dados para atualização
-    const dadosAtualizacao: any = {};
+    const dadosAtualizacao: Record<string, unknown> = {};
     
     Object.keys(dadosValidados).forEach(key => {
       const valor = dadosValidados[key as keyof typeof dadosValidados];
@@ -229,18 +233,15 @@ export async function PUT(
     await prisma.auditLog.create({
       data: {
         acao: 'UPDATE',
-        entidade: 'Atendente',
-        entidadeId: id,
-        usuarioId: session.user.id,
+        nomeTabela: 'Atendente',
+        registroId: id,
+        usuarioId: session?.user?.id || '',
         atendenteId: id,
-        detalhes: {
-          camposAlterados: Object.keys(dadosAtualizacao),
-          valoresAnteriores: Object.keys(dadosAtualizacao).reduce((acc, key) => {
-            acc[key] = atendenteExistente[key as keyof typeof atendenteExistente];
-            return acc;
-          }, {} as any),
-          valoresNovos: dadosAtualizacao
-        }
+        dadosAnteriores: JSON.stringify(Object.keys(dadosAtualizacao).reduce((acc, key) => {
+          acc[key] = atendenteExistente[key as keyof typeof atendenteExistente];
+          return acc;
+        }, {} as Record<string, unknown>)),
+        dadosNovos: JSON.stringify(dadosAtualizacao)
       }
     });
 
@@ -251,27 +252,24 @@ export async function PUT(
       telefone: formatarTelefone(atendenteAtualizado.telefone)
     };
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        atendente: atendenteFormatado
-      },
-      timestamp: new Date().toISOString()
-    });
+    return createSuccessResponse({ atendente: atendenteFormatado });
 
   } catch (error) {
     console.error('Erro ao atualizar atendente:', error);
     
     if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json(
-        { success: false, error: 'Dados inválidos', details: error.message },
-        { status: 400 }
+      return createErrorResponse(
+        ErrorCodes.VALIDATION_ERROR,
+        'Dados inválidos',
+        error.message,
+        400
       );
     }
     
-    return NextResponse.json(
-      { success: false, error: 'Erro interno do servidor' },
-      { status: 500 }
+    return createErrorResponse(
+      ErrorCodes.INTERNAL_ERROR,
+      'Erro interno do servidor',
+      500
     );
   }
 }
@@ -286,28 +284,27 @@ export async function DELETE(
 ) {
   try {
     const session = await auth();
-    
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: 'Não autorizado' },
-        { status: 401 }
-      );
+    const authResult = validateAuthentication(session);
+    if (authResult) {
+      return authResult;
     }
 
     // Verificar permissões - apenas admin pode deletar
-    if (session.user.userType !== 'ADMIN') {
-      return NextResponse.json(
-        { success: false, error: 'Acesso negado. Apenas administradores podem remover atendentes' },
-        { status: 403 }
-      );
+    const permissionResult = validatePermissions(
+      session?.user?.userType || '',
+      [TipoUsuario.ADMIN]
+    );
+    if (permissionResult) {
+      return permissionResult;
     }
 
     const { id } = params;
     
     if (!id) {
-      return NextResponse.json(
-        { success: false, error: 'ID do atendente é obrigatório' },
-        { status: 400 }
+      return createErrorResponse(
+        ErrorCodes.VALIDATION_ERROR,
+        'ID do atendente é obrigatório',
+        400
       );
     }
 
@@ -317,9 +314,10 @@ export async function DELETE(
     });
 
     if (!atendenteExistente) {
-      return NextResponse.json(
-        { success: false, error: 'Atendente não encontrado' },
-        { status: 404 }
+      return createErrorResponse(
+        ErrorCodes.NOT_FOUND,
+        'Atendente não encontrado',
+        404
       );
     }
 
@@ -335,36 +333,33 @@ export async function DELETE(
     await prisma.auditLog.create({
       data: {
         acao: 'SOFT_DELETE',
-        entidade: 'Atendente',
-        entidadeId: id,
-        usuarioId: session.user.id,
+        nomeTabela: 'Atendente',
+        registroId: id,
+        usuarioId: session?.user?.id || '',
         atendenteId: id,
-        detalhes: {
+        dadosNovos: JSON.stringify({
           motivo: 'Atendente inativado via soft delete',
           statusAnterior: atendenteExistente.status,
           statusNovo: StatusAtendente.INATIVO
-        }
+        })
       }
     });
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        message: 'Atendente inativado com sucesso',
-        atendente: {
-          id: atendenteInativado.id,
-          nome: atendenteInativado.nome,
-          status: atendenteInativado.status
-        }
-      },
-      timestamp: new Date().toISOString()
+    return createSuccessResponse({
+      message: 'Atendente inativado com sucesso',
+      atendente: {
+        id: atendenteInativado.id,
+        nome: atendenteInativado.nome,
+        status: atendenteInativado.status
+      }
     });
 
   } catch (error) {
     console.error('Erro ao remover atendente:', error);
-    return NextResponse.json(
-      { success: false, error: 'Erro interno do servidor' },
-      { status: 500 }
+    return createErrorResponse(
+      ErrorCodes.INTERNAL_ERROR,
+      'Erro interno do servidor',
+      500
     );
   }
 }

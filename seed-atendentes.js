@@ -17,7 +17,9 @@ async function seedAtendentes() {
         cargo: 'Atendente',
         setor: 'Atendimento',
         portaria: 'Portaria A',
-        status: 'ATIVO'
+        status: 'ATIVO',
+        endereco: 'Rua das Flores, 123 - Centro',
+        observacoes: 'Atendente dedicado'
       },
       {
         nome: 'Maria Santos',
@@ -30,7 +32,9 @@ async function seedAtendentes() {
         cargo: 'Supervisor',
         setor: 'Supervisão',
         portaria: 'Portaria B',
-        status: 'ATIVO'
+        status: 'ATIVO',
+        endereco: 'Av. Principal, 456 - Jardim',
+        observacoes: 'Supervisora experiente'
       },
       {
         nome: 'Pedro Oliveira',
@@ -43,7 +47,9 @@ async function seedAtendentes() {
         cargo: 'Atendente',
         setor: 'Atendimento',
         portaria: 'Portaria A',
-        status: 'ATIVO'
+        status: 'ATIVO',
+        endereco: 'Rua do Comércio, 789 - Vila Nova',
+        observacoes: 'Atendente proativo'
       },
       {
         nome: 'Ana Costa',
@@ -56,7 +62,9 @@ async function seedAtendentes() {
         cargo: 'Atendente',
         setor: 'Atendimento',
         portaria: 'Portaria C',
-        status: 'FERIAS'
+        status: 'FERIAS',
+        endereco: 'Rua das Acácias, 321 - Bairro Alto',
+        observacoes: 'Atendente em férias'
       },
       {
         nome: 'Carlos Ferreira',
@@ -69,7 +77,9 @@ async function seedAtendentes() {
         cargo: 'Coordenador',
         setor: 'Coordenação',
         portaria: 'Portaria B',
-        status: 'ATIVO'
+        status: 'ATIVO',
+        endereco: 'Av. Central, 654 - Centro',
+        observacoes: 'Coordenador experiente'
       }
     ];
 

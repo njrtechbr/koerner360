@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { auth } from '../../../../../../auth.ts';
+import { auth } from '@/auth';
 import { z } from 'zod';
+import { 
+  createSuccessResponse, 
+  createErrorResponse, 
+  validateAuthentication,
+  validatePermissions,
+  ErrorCodes 
+} from '@/lib/api-response';
+import { TipoUsuario } from '@prisma/client';
 
 // Schema de validação para criar item do changelog
 const criarItemSchema = z.object({
@@ -30,12 +38,12 @@ export async function GET(
       }
     });
     
-    return NextResponse.json(itens);
+    return createSuccessResponse(itens);
   } catch (error) {
     console.error('Erro ao buscar itens do changelog:', error);
-    return NextResponse.json(
-      { erro: 'Erro interno do servidor' },
-      { status: 500 }
+    return createErrorResponse(
+      ErrorCodes.INTERNAL_ERROR,
+      'Erro interno do servidor'
     );
   }
 }
@@ -48,19 +56,15 @@ export async function POST(
   try {
     const session = await auth();
     
-    if (!session?.user) {
-      return NextResponse.json(
-        { erro: 'Não autorizado' },
-        { status: 401 }
-      );
+    const authResult = validateAuthentication(session);
+    if (authResult) {
+      return authResult;
     }
     
     // Apenas admins podem criar itens de changelog
-    if (session.user.userType !== 'ADMIN') {
-      return NextResponse.json(
-        { erro: 'Acesso negado. Apenas administradores podem criar itens de changelog.' },
-        { status: 403 }
-      );
+    const permissionResult = validatePermissions(session?.user?.userType || '', [TipoUsuario.ADMIN]);
+    if (permissionResult) {
+      return permissionResult;
     }
     
     // Verificar se o changelog existe
@@ -69,9 +73,9 @@ export async function POST(
     });
     
     if (!changelogExistente) {
-      return NextResponse.json(
-        { erro: 'Changelog não encontrado' },
-        { status: 404 }
+      return createErrorResponse(
+        ErrorCodes.NOT_FOUND,
+        'Changelog não encontrado'
       );
     }
     
@@ -88,19 +92,23 @@ export async function POST(
       }
     });
     
-    return NextResponse.json(item, { status: 201 });
+    return createSuccessResponse(
+      item,
+      'Item do changelog criado com sucesso'
+    );
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { erro: 'Dados inválidos', detalhes: error.issues },
-        { status: 400 }
+      return createErrorResponse(
+        ErrorCodes.VALIDATION_ERROR,
+        'Dados inválidos',
+        error.issues
       );
     }
     
     console.error('Erro ao criar item do changelog:', error);
-    return NextResponse.json(
-      { erro: 'Erro interno do servidor' },
-      { status: 500 }
+    return createErrorResponse(
+      ErrorCodes.INTERNAL_ERROR,
+      'Erro interno do servidor'
     );
   }
 }

@@ -15,7 +15,7 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ---
 
-## [0.2.5] - 2025-01-27
+## [0.2.5] - 2025-08-15
 
 ### 🐛 Correções
 - **CLIENT_FETCH_ERROR**: Resolvido erro de autenticação que impedia o login no Auth.js v5
@@ -36,7 +36,7 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ---
 
-## [0.2.4] - 2025-01-27
+## [0.2.4] - 2025-08-15
 
 ### ✨ Novas Funcionalidades
 - **Página Pública de Changelog**: Implementada página de changelog acessível publicamente sem necessidade de autenticação
@@ -55,7 +55,7 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ---
 
-## [0.2.3] - 2025-01-27
+## [0.2.3] - 2025-08-15
 
 ### 🔒 Segurança
 - **Tratamento de Erros JWT**: Implementado sistema robusto para capturar e tratar erros de descriptografia JWT

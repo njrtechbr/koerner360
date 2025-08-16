@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { auth } from '../../../../../auth.ts';
 import { z } from 'zod';
+import {
+  createSuccessResponse,
+  createErrorResponse,
+  ErrorCodes,
+  withErrorHandling,
+  validateAuthentication
+} from '@/lib/api-response';
 
 // Schema de validação para atualizar changelog
 const atualizarChangelogSchema = z.object({
@@ -46,18 +53,18 @@ export async function GET(
     });
     
     if (!changelog) {
-      return NextResponse.json(
-        { erro: 'Changelog não encontrado' },
-        { status: 404 }
+      return createErrorResponse(
+        ErrorCodes.NOT_FOUND,
+        'Changelog não encontrado'
       );
     }
     
-    return NextResponse.json(changelog);
+    return createSuccessResponse(changelog, 'Changelog encontrado com sucesso');
   } catch (error) {
     console.error('Erro ao buscar changelog:', error);
-    return NextResponse.json(
-      { erro: 'Erro interno do servidor' },
-      { status: 500 }
+    return createErrorResponse(
+      ErrorCodes.INTERNAL_ERROR,
+      'Erro interno do servidor'
     );
   }
 }
@@ -70,18 +77,16 @@ export async function PUT(
   try {
     const session = await auth();
     
-    if (!session?.user) {
-      return NextResponse.json(
-        { erro: 'Não autorizado' },
-        { status: 401 }
-      );
+    const authResult = validateAuthentication(session);
+    if (authResult) {
+      return authResult;
     }
-    
+
     // Apenas admins podem atualizar changelogs
-    if (session.user.userType !== 'ADMIN') {
-      return NextResponse.json(
-        { erro: 'Acesso negado. Apenas administradores podem atualizar changelogs.' },
-        { status: 403 }
+    if (session?.user?.userType !== 'ADMIN') {
+      return createErrorResponse(
+        ErrorCodes.FORBIDDEN,
+        'Acesso negado. Apenas administradores podem atualizar changelogs.'
       );
     }
     
@@ -94,9 +99,9 @@ export async function PUT(
     });
     
     if (!changelogExistente) {
-      return NextResponse.json(
-        { erro: 'Changelog não encontrado' },
-        { status: 404 }
+      return createErrorResponse(
+        ErrorCodes.NOT_FOUND,
+        'Changelog não encontrado'
       );
     }
     
@@ -107,9 +112,9 @@ export async function PUT(
       });
       
       if (versaoExistente) {
-        return NextResponse.json(
-          { erro: 'Versão já existe' },
-          { status: 400 }
+        return createErrorResponse(
+          ErrorCodes.VALIDATION_ERROR,
+          'Versão já existe'
         );
       }
     }
@@ -133,19 +138,20 @@ export async function PUT(
       }
     });
     
-    return NextResponse.json(changelog);
+    return createSuccessResponse(changelog, 'Changelog atualizado com sucesso');
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { erro: 'Dados inválidos', detalhes: error.issues },
-        { status: 400 }
+      return createErrorResponse(
+        ErrorCodes.VALIDATION_ERROR,
+        'Dados inválidos',
+        error.issues
       );
     }
     
     console.error('Erro ao atualizar changelog:', error);
-    return NextResponse.json(
-      { erro: 'Erro interno do servidor' },
-      { status: 500 }
+    return createErrorResponse(
+      ErrorCodes.INTERNAL_ERROR,
+      'Erro interno do servidor'
     );
   }
 }
@@ -158,18 +164,16 @@ export async function DELETE(
   try {
     const session = await auth();
     
-    if (!session?.user) {
-      return NextResponse.json(
-        { erro: 'Não autorizado' },
-        { status: 401 }
-      );
+    const authResult = validateAuthentication(session);
+    if (authResult) {
+      return authResult;
     }
-    
+
     // Apenas admins podem deletar changelogs
-    if (session.user.userType !== 'ADMIN') {
-      return NextResponse.json(
-        { erro: 'Acesso negado. Apenas administradores podem deletar changelogs.' },
-        { status: 403 }
+    if (session?.user?.userType !== 'ADMIN') {
+      return createErrorResponse(
+        ErrorCodes.FORBIDDEN,
+        'Acesso negado. Apenas administradores podem deletar changelogs.'
       );
     }
     
@@ -179,9 +183,9 @@ export async function DELETE(
     });
     
     if (!changelogExistente) {
-      return NextResponse.json(
-        { erro: 'Changelog não encontrado' },
-        { status: 404 }
+      return createErrorResponse(
+        ErrorCodes.NOT_FOUND,
+        'Changelog não encontrado'
       );
     }
     
@@ -189,15 +193,15 @@ export async function DELETE(
       where: { id: params.id }
     });
     
-    return NextResponse.json(
-      { mensagem: 'Changelog deletado com sucesso' },
-      { status: 200 }
+    return createSuccessResponse(
+      { id: params.id },
+      'Changelog deletado com sucesso'
     );
   } catch (error) {
     console.error('Erro ao deletar changelog:', error);
-    return NextResponse.json(
-      { erro: 'Erro interno do servidor' },
-      { status: 500 }
+    return createErrorResponse(
+      ErrorCodes.INTERNAL_ERROR,
+      'Erro interno do servidor'
     );
   }
 }

@@ -5,16 +5,15 @@
 
 import { Metadata } from 'next';
 import { Suspense } from 'react';
-import { auth } from '../../../auth.ts';
+import { auth } from '../../../auth';
 import { redirect } from 'next/navigation';
 import { TipoUsuario } from '@prisma/client';
 import { MainLayout } from '@/components/layout/main-layout';
 import { AtendentesWrapper } from '@/components/atendentes/atendentes-wrapper';
 
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Users, UserCheck, UserX, Calendar } from 'lucide-react';
+import { UserCheck, UserX, Calendar } from 'lucide-react';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
@@ -89,15 +88,14 @@ function TabelaAtendentesLoading() {
  * Página principal de gerenciamento de atendentes
  */
 export default async function AtendentesPage({ searchParams }: PageProps) {
-  // Verificar autenticação
   const session = await auth();
-  
+
   if (!session) {
     redirect('/login');
   }
 
-  // Verificar permissões - apenas admin e supervisor podem acessar
-  if (session.user.tipoUsuario === TipoUsuario.ATENDENTE) {
+  // Verificar se o usuário tem permissão para acessar esta página
+  if (session.user.userType === TipoUsuario.ATENDENTE) {
     redirect('/dashboard');
   }
 
@@ -112,14 +110,6 @@ export default async function AtendentesPage({ searchParams }: PageProps) {
             Gerencie atendentes, visualize estatísticas e controle avaliações.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button asChild>
-            <Link href="/atendentes/novo">
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Atendente
-            </Link>
-          </Button>
-        </div>
       </div>
 
 
@@ -127,7 +117,7 @@ export default async function AtendentesPage({ searchParams }: PageProps) {
       {/* Cards de ações rápidas */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="hover:shadow-md transition-shadow cursor-pointer">
-          <Link href="/atendentes?status=ATIVO">
+          <Link href="/atendentes?status=ATIVO" prefetch={false}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Atendentes Ativos</CardTitle>
               <UserCheck className="h-4 w-4 text-green-600" />
@@ -141,7 +131,7 @@ export default async function AtendentesPage({ searchParams }: PageProps) {
         </Card>
 
         <Card className="hover:shadow-md transition-shadow cursor-pointer">
-          <Link href="/atendentes?status=FERIAS">
+          <Link href="/atendentes?status=FERIAS" prefetch={false}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Em Férias</CardTitle>
               <Calendar className="h-4 w-4 text-blue-600" />
@@ -155,7 +145,7 @@ export default async function AtendentesPage({ searchParams }: PageProps) {
         </Card>
 
         <Card className="hover:shadow-md transition-shadow cursor-pointer">
-          <Link href="/atendentes?status=AFASTADO">
+          <Link href="/atendentes?status=AFASTADO" prefetch={false}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Afastados</CardTitle>
               <UserX className="h-4 w-4 text-yellow-600" />
@@ -193,6 +183,8 @@ export default async function AtendentesPage({ searchParams }: PageProps) {
         </CardContent>
       </Card>
       </div>
+      
+
     </MainLayout>
   );
 }

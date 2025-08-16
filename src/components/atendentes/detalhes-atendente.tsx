@@ -4,7 +4,7 @@
 
 'use client';
 
-import { Atendente, StatusAtendente } from '@/types/atendente';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { formatarCPF, formatarTelefone } from '@/lib/validations/atendente';
-import { STATUS_ATENDENTE_LABELS, STATUS_ATENDENTE_CORES } from '@/types/atendente';
+import { STATUS_ATENDENTE_LABELS, STATUS_ATENDENTE_CORES, type Atendente } from '@/types/atendente';
 
 interface DetalhesAtendenteProps {
   atendente: Atendente;
@@ -84,7 +84,7 @@ export function DetalhesAtendente({ atendente }: DetalhesAtendenteProps) {
           
           <div className="flex justify-center">
             <Button asChild>
-              <Link href={`/atendentes/${atendente.id}?tab=editar`}>
+              <Link href={`/atendentes/${atendente.id}?tab=editar`} prefetch={false}>
                 <Edit className="mr-2 h-4 w-4" />
                 Editar Informações
               </Link>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, memo } from 'react';
 import {
   Table,
   TableBody,
@@ -58,7 +58,7 @@ interface TabelaUsuariosProps {
   podeDesativar: boolean;
 }
 
-export function TabelaUsuarios({
+function TabelaUsuariosComponent({
   usuarios,
   carregando,
   onVerDetalhes,
@@ -72,12 +72,12 @@ export function TabelaUsuarios({
     direcao: DirecaoOrdenacao;
   }>({ coluna: 'nome', direcao: 'asc' });
 
-  const handleOrdenacao = (coluna: OrdenacaoColuna) => {
+  const handleOrdenacao = useCallback((coluna: OrdenacaoColuna) => {
     setOrdenacao(prev => ({
       coluna,
       direcao: prev.coluna === coluna && prev.direcao === 'asc' ? 'desc' : 'asc',
     }));
-  };
+  }, []);
 
   const usuariosOrdenados = [...usuarios].sort((a, b) => {
     const { coluna, direcao } = ordenacao;
@@ -114,7 +114,7 @@ export function TabelaUsuarios({
     return 0;
   });
 
-  const getTipoUsuarioLabel = (tipo: string) => {
+  const getTipoUsuarioLabel = useCallback((tipo: string) => {
     switch (tipo) {
       case 'ADMIN':
         return 'Admin';
@@ -125,9 +125,9 @@ export function TabelaUsuarios({
       default:
         return tipo;
     }
-  };
+  }, []);
 
-  const getTipoUsuarioVariant = (tipo: string) => {
+  const getTipoUsuarioVariant = useCallback((tipo: string) => {
     switch (tipo) {
       case 'ADMIN':
         return 'destructive';
@@ -138,16 +138,16 @@ export function TabelaUsuarios({
       default:
         return 'outline';
     }
-  };
+  }, []);
 
-  const getIniciais = (nome: string) => {
+  const getIniciais = useCallback((nome: string) => {
     return nome
       .split(' ')
       .map(n => n[0])
       .join('')
       .toUpperCase()
       .slice(0, 2);
-  };
+  }, []);
 
   const formatarData = (data: string) => {
     return format(new Date(data), 'dd/MM/yyyy', { locale: ptBR });
@@ -368,3 +368,5 @@ export function TabelaUsuarios({
     </div>
   );
 }
+
+export const TabelaUsuarios = memo(TabelaUsuariosComponent);

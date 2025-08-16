@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '../../../../auth.ts';
+import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import {
+  createSuccessResponse,
+  createPaginatedResponse,
+  createErrorResponse,
+  handleGenericError,
+  validateAuthentication,
+  validatePermissions,
+  ErrorCodes,
+  withErrorHandling
+} from '@/lib/api-response';
+import { TipoUsuario } from '@prisma/client';
 
 // Schema de validação para criação de usuário
 const criarUsuarioSchema = z.object({
@@ -17,20 +28,23 @@ const criarUsuarioSchema = z.object({
 
 // GET /api/usuarios - Listar usuários
 export async function GET(request: NextRequest) {
-  try {
+  return withErrorHandling(async () => {
     const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    }
+    
+    // Validar autenticação
+    const authError = validateAuthentication(session?.user);
+    if (authError) return authError;
 
-    // Verificar permissões
-    if (session.user.userType !== 'ADMIN' && session.user.userType !== 'SUPERVISOR') {
-      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
-    }
+    // Validar permissões
+    const permissionError = validatePermissions(
+      session!.user.userType,
+      ['ADMIN', 'SUPERVISOR']
+    );
+    if (permissionError) return permissionError;
 
     // Filtro baseado no tipo de usuário
     let whereClause = {};
-    if (session.user.userType === 'SUPERVISOR') {
+    if (session?.user?.userType === TipoUsuario.SUPERVISOR) {
       whereClause = {
         OR: [
           { supervisorId: session.user.id },
@@ -94,48 +108,35 @@ export async function GET(request: NextRequest) {
 
     const totalPages = Math.ceil(total / limit);
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        usuarios,
-        paginacao: {
-          paginaAtual: page,
-          itensPorPagina: limit,
-          totalItens: total,
-          totalPaginas: totalPages,
-          temProximaPagina: page < totalPages,
-          temPaginaAnterior: page > 1,
-        },
-      },
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error('Erro ao buscar usuários:', error);
-    return NextResponse.json(
+    return createPaginatedResponse(
+      { usuarios },
       {
-        success: false,
-        error: {
-          code: 'INTERNAL_ERROR',
-          message: 'Erro interno do servidor',
-        },
-      },
-      { status: 500 }
+        paginaAtual: page,
+        itensPorPagina: limit,
+        totalItens: total,
+        totalPaginas: totalPages,
+        temProximaPagina: page < totalPages,
+        temPaginaAnterior: page > 1,
+      }
     );
-  }
+  }, 'buscar usuários');
 }
 
 // POST /api/usuarios - Criar usuário
 export async function POST(request: NextRequest) {
-  try {
+  return withErrorHandling(async () => {
     const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-    }
+    
+    // Validar autenticação
+    const authError = validateAuthentication(session?.user);
+    if (authError) return authError;
 
-    // Verificar permissões - apenas admin pode criar usuários
-    if (session.user.userType !== 'ADMIN') {
-      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
-    }
+    // Validar permissões - apenas admin pode criar usuários
+    const permissionError = validatePermissions(
+      session!.user.userType,
+      ['ADMIN']
+    );
+    if (permissionError) return permissionError;
 
     const body = await request.json();
     const validatedData = criarUsuarioSchema.parse(body);
@@ -146,15 +147,9 @@ export async function POST(request: NextRequest) {
     });
 
     if (usuarioExistente) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: 'CONFLICT',
-            message: 'Email já está em uso',
-          },
-        },
-        { status: 409 }
+      return createErrorResponse(
+        ErrorCodes.CONFLICT,
+        'Email já está em uso'
       );
     }
 
@@ -165,15 +160,9 @@ export async function POST(request: NextRequest) {
       });
 
       if (!supervisor || supervisor.tipoUsuario !== 'SUPERVISOR') {
-        return NextResponse.json(
-          {
-            success: false,
-            error: {
-              code: 'VALIDATION_ERROR',
-              message: 'Supervisor inválido',
-            },
-          },
-          { status: 400 }
+        return createErrorResponse(
+          ErrorCodes.VALIDATION_ERROR,
+          'Supervisor inválido'
         );
       }
     }
@@ -207,40 +196,10 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(
-      {
-        success: true,
-        data: { usuario: novoUsuario },
-        message: 'Usuário criado com sucesso',
-        timestamp: new Date().toISOString(),
-      },
-      { status: 201 }
+    return createSuccessResponse(
+      { usuario: novoUsuario },
+      'Usuário criado com sucesso',
+      201
     );
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Dados inválidos',
-            details: error.issues,
-          },
-        },
-        { status: 400 }
-      );
-    }
-
-    console.error('Erro ao criar usuário:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: 'INTERNAL_ERROR',
-          message: 'Erro interno do servidor',
-        },
-      },
-      { status: 500 }
-    );
-  }
+  }, 'criar usuário');
 }

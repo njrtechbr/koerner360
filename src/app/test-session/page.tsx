@@ -93,7 +93,7 @@ export default function TestSessionPage() {
                   <strong>Email:</strong> {session.user?.email || 'N/A'}
                 </div>
                 <div>
-                  <strong>Tipo:</strong> {(session.user as any)?.userType || 'N/A'}
+                  <strong>Tipo:</strong> {(session.user as { userType?: string })?.userType || 'N/A'}
                 </div>
                 <div>
                   <strong>ID:</strong> {session.user?.id || 'N/A'}

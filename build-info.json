@@ -1,19 +1,28 @@
 {
-  "version": "0.2.5-dev.2025-08-16T00-21-37",
-  "branch": "master",
-  "commit": "57b380f534f01c92b5f72d99ecb964baf8e978b8",
-  "commitShort": "57b380f",
-  "commitMessage": "chore: atualiza versão e changelog para 0.2.4 - corrige erros de build e tipos TypeScript",
-  "hasUncommittedChanges": true,
-  "lastCommitDate": "2025-08-15 21:13:07 -0300",
-  "buildDate": "2025-08-16T00:21:37.938Z",
-  "buildTimestamp": 1755303697938,
-  "environment": "development",
-  "nodeVersion": "v22.18.0",
-  "platform": "win32",
-  "arch": "x64",
-  "buildNumber": null,
-  "ciCommit": null,
-  "ciBranch": null,
-  "ciPipeline": null
+  "version": "0.2.5",
+  "name": "koerner360",
+  "description": "Sistema completo de gestão de feedback e avaliações",
+  "git": {
+    "commitHash": "b5d79d07cc2da99a82fe416e7b8055b55a33e401",
+    "commitShort": "b5d79d0",
+    "branch": "master",
+    "commitDate": "2025-08-15 21:23:07 -0300",
+    "commitMessage": "chore: corrige sincronização de versão para 0.2.5 e adiciona regras de controle de versionamento",
+    "commitAuthor": "Nereu Jr",
+    "tag": "\"\"",
+    "hasUncommittedChanges": true
+  },
+  "build": {
+    "date": "2025-08-16T21:25:10.368Z",
+    "timestamp": 1755379510368,
+    "nodeVersion": "v22.18.0",
+    "platform": "win32",
+    "arch": "x64",
+    "environment": "development"
+  },
+  "metadata": {
+    "buildNumber": null,
+    "buildId": null,
+    "ciProvider": null
+  }
 }

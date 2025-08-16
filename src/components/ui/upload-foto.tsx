@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, memo } from 'react';
 import { Upload, X, Camera, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
+import { useSonnerToast } from '@/hooks/use-sonner-toast';
 
 interface UploadFotoProps {
   /** URL atual da foto */
@@ -39,7 +39,7 @@ const tamanhos = {
  * Componente para upload de fotos com preview
  * Suporta drag & drop, validação de arquivo e upload automático
  */
-export function UploadFoto({
+function UploadFotoComponent({
   fotoUrl,
   nome = 'Usuario',
   onUploadCompleto,
@@ -50,7 +50,7 @@ export function UploadFoto({
   permiteRemover = true,
   className
 }: UploadFotoProps) {
-  const { toast } = useToast();
+  const { showSuccess, showError } = useSonnerToast();
   const [carregando, setCarregando] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -106,36 +106,31 @@ export function UploadFoto({
       setPreviewUrl(null);
       
       // Notificar sucesso
-      toast({
-        title: 'Sucesso',
-        description: 'Foto enviada com sucesso!'
-      });
+      showSuccess(
+        'Foto enviada com sucesso! A imagem foi carregada e está disponível.'
+      );
       
       // Callback de sucesso
       onUploadCompleto?.(resultado.data.url);
 
     } catch (error) {
       console.error('Erro no upload:', error);
-      toast({
-        title: 'Erro',
-        description: error instanceof Error ? error.message : 'Erro no upload',
-        variant: 'destructive'
-      });
+      showError(
+        `Erro no upload: ${error instanceof Error ? error.message : 'Erro inesperado no upload'}`
+      );
       setPreviewUrl(null);
     } finally {
       setCarregando(false);
     }
-  }, [entidade, entidadeId, onUploadCompleto]);
+  }, [entidade, entidadeId, onUploadCompleto, showSuccess, showError]);
 
   // Processar arquivo selecionado
   const processarArquivo = useCallback((arquivo: File) => {
     const erro = validarArquivo(arquivo);
     if (erro) {
-      toast({
-        title: 'Erro',
-        description: erro,
-        variant: 'destructive'
-      });
+      showError(
+        `Arquivo inválido: ${erro}`
+      );
       return;
     }
 
@@ -148,7 +143,7 @@ export function UploadFoto({
 
     // Fazer upload
     fazerUpload(arquivo);
-  }, [validarArquivo, fazerUpload]);
+  }, [validarArquivo, fazerUpload, showError]);
 
   // Handlers de eventos
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -187,20 +182,17 @@ export function UploadFoto({
         method: 'DELETE'
       });
 
-      toast({
-        title: 'Sucesso',
-        description: 'Foto removida com sucesso!'
-      });
+      showSuccess(
+        'Foto removida com sucesso! A imagem foi excluída do sistema.'
+      );
       onRemover?.();
     } catch (error) {
       console.error('Erro ao remover foto:', error);
-      toast({
-        title: 'Erro',
-        description: 'Erro ao remover foto',
-        variant: 'destructive'
-      });
+      showError(
+        'Erro ao remover foto: Não foi possível excluir a imagem'
+      );
     }
-  }, [fotoUrl, onRemover]);
+  }, [fotoUrl, onRemover, showSuccess, showError]);
 
   const urlFoto = previewUrl || fotoUrl;
   const iniciais = nome.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -281,3 +273,5 @@ export function UploadFoto({
     </div>
   );
 }
+
+export const UploadFoto = memo(UploadFotoComponent);

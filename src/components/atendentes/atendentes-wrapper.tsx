@@ -6,18 +6,23 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+
 import { FiltrosAtendentes } from './filtros-atendentes';
 import { TabelaAtendentes } from './tabela-atendentes';
-import type { 
-  Atendente, 
-  FiltrosAtendente, 
-  OrdenacaoAtendentes, 
+import { ModalNovoAtendente } from './ModalNovoAtendente';
+import {
+  Atendente,
+  FiltrosAtendente,
+  OrdenacaoAtendente,
   PaginacaoAtendentes,
-  StatusAtendente 
+  StatusAtendente
 } from '@/types/atendente';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
+import { useSonnerToast } from '@/hooks/use-sonner-toast';
 
 interface AtendentesWrapperProps {
   searchParams: {
@@ -57,9 +62,9 @@ function obterFiltrosIniciais(searchParams: AtendentesWrapperProps['searchParams
 /**
  * Ordenação inicial baseada nos searchParams
  */
-function obterOrdenacaoInicial(searchParams: AtendentesWrapperProps['searchParams']): OrdenacaoAtendentes {
+function obterOrdenacaoInicial(searchParams: AtendentesWrapperProps['searchParams']): OrdenacaoAtendente {
   return {
-    campo: (searchParams.coluna as keyof Atendente) || 'nome',
+    coluna: (searchParams.coluna as OrdenacaoAtendente['coluna']) || 'nome',
     direcao: (searchParams.direcao as 'asc' | 'desc') || 'asc'
   };
 }
@@ -139,12 +144,17 @@ function TabelaLoading() {
  */
 export function AtendentesWrapper({ searchParams }: AtendentesWrapperProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const { showInfo } = useSonnerToast();
+  
+  // Estados
   const [atendentes, setAtendentes] = useState<Atendente[]>([]);
   const [filtros, setFiltros] = useState<FiltrosAtendente>(() => obterFiltrosIniciais(searchParams));
-  const [ordenacao, setOrdenacao] = useState<OrdenacaoAtendentes>(() => obterOrdenacaoInicial(searchParams));
+  const [ordenacao, setOrdenacao] = useState<OrdenacaoAtendente>(() => obterOrdenacaoInicial(searchParams));
   const [paginacao, setPaginacao] = useState<PaginacaoAtendentes>(() => obterPaginacaoInicial(searchParams));
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [modalNovoAtendenteAberto, setModalNovoAtendenteAberto] = useState(false);
 
 
   /**
@@ -152,7 +162,7 @@ export function AtendentesWrapper({ searchParams }: AtendentesWrapperProps) {
    */
   const buscarAtendentes = useCallback(async (
     filtrosParam?: FiltrosAtendente,
-    ordenacaoParam?: OrdenacaoAtendentes,
+    ordenacaoParam?: OrdenacaoAtendente,
     paginaAtual?: number,
     itensPorPagina?: number
   ) => {
@@ -176,7 +186,7 @@ export function AtendentesWrapper({ searchParams }: AtendentesWrapperProps) {
       
       params.set('pagina', paginaAtiva.toString());
       params.set('limite', itensAtivos.toString());
-      params.set('coluna', ordenacaoAtiva.campo);
+      params.set('coluna', ordenacaoAtiva.coluna);
       params.set('direcao', ordenacaoAtiva.direcao);
 
       const response = await fetch(`/api/atendentes?${params.toString()}`);
@@ -193,6 +203,17 @@ export function AtendentesWrapper({ searchParams }: AtendentesWrapperProps) {
           ...prev,
           ...data.data.paginacao
         }));
+        
+        // Notificação informativa sobre os resultados
+        const totalAtendentes = data.data.paginacao?.totalItens || 0;
+        if (totalAtendentes === 0) {
+          showInfo('Nenhum atendente encontrado com os filtros aplicados');
+        } else {
+          const temFiltros = Object.values(filtrosAtivos).some(valor => valor && valor !== '');
+          if (temFiltros) {
+            showInfo(`${totalAtendentes} atendente${totalAtendentes !== 1 ? 's' : ''} encontrado${totalAtendentes !== 1 ? 's' : ''} com os filtros aplicados`);
+          }
+        }
       } else {
         throw new Error(data.error || 'Erro ao carregar atendentes');
       }
@@ -202,14 +223,14 @@ export function AtendentesWrapper({ searchParams }: AtendentesWrapperProps) {
     } finally {
       setCarregando(false);
     }
-  }, []);
+  }, [filtros, ordenacao, paginacao.paginaAtual, paginacao.itensPorPagina, showInfo]);
 
 
 
   /**
    * Atualizar URL com novos parâmetros
    */
-  const atualizarURL = useCallback((novosFiltros: FiltrosAtendente, novaOrdenacao: OrdenacaoAtendentes, novaPaginacao: Partial<PaginacaoAtendentes>) => {
+  const atualizarURL = useCallback((novosFiltros: FiltrosAtendente, novaOrdenacao: OrdenacaoAtendente, novaPaginacao: Partial<PaginacaoAtendentes>) => {
     const params = new URLSearchParams();
     
     if (novosFiltros.busca) params.set('search', novosFiltros.busca);
@@ -224,8 +245,8 @@ export function AtendentesWrapper({ searchParams }: AtendentesWrapperProps) {
     if (novaPaginacao.itensPorPagina && novaPaginacao.itensPorPagina !== 10) {
       params.set('limite', novaPaginacao.itensPorPagina.toString());
     }
-    if (novaOrdenacao.campo !== 'nome') {
-      params.set('coluna', novaOrdenacao.campo);
+    if (novaOrdenacao.coluna !== 'nome') {
+      params.set('coluna', novaOrdenacao.coluna);
     }
     if (novaOrdenacao.direcao !== 'asc') {
       params.set('direcao', novaOrdenacao.direcao);
@@ -245,32 +266,50 @@ export function AtendentesWrapper({ searchParams }: AtendentesWrapperProps) {
     const novaPaginacao = { ...paginacao, paginaAtual: 1 };
     setPaginacao(novaPaginacao);
     atualizarURL(novosFiltros, ordenacao, novaPaginacao);
+    
+    // Notificação informativa sobre aplicação de filtros
+    const temFiltros = Object.values(novosFiltros).some(valor => valor && valor !== '');
+    if (temFiltros) {
+      showInfo('Filtros aplicados. Carregando resultados...');
+    } else {
+      showInfo('Filtros removidos. Carregando todos os atendentes...');
+    }
+    
     buscarAtendentes(novosFiltros, ordenacao, 1, paginacao.itensPorPagina);
-  }, [ordenacao, paginacao, atualizarURL, buscarAtendentes]);
+  }, [ordenacao, paginacao, atualizarURL, buscarAtendentes, showInfo]);
 
-  const handleOrdenacaoChange = useCallback((novaOrdenacao: OrdenacaoAtendentes) => {
+  const handleOrdenacaoChange = useCallback((novaOrdenacao: OrdenacaoAtendente) => {
     setOrdenacao(novaOrdenacao);
     atualizarURL(filtros, novaOrdenacao, paginacao);
+    
+    // Notificação informativa sobre mudança de ordenação
+    const direcaoTexto = novaOrdenacao.direcao === 'asc' ? 'crescente' : 'decrescente';
+    showInfo(`Ordenando por ${novaOrdenacao.coluna} (${direcaoTexto})`);
+    
     buscarAtendentes(filtros, novaOrdenacao, paginacao.paginaAtual, paginacao.itensPorPagina);
-  }, [filtros, paginacao, atualizarURL, buscarAtendentes]);
+  }, [filtros, paginacao, atualizarURL, buscarAtendentes, showInfo]);
 
   const handlePaginacaoChange = useCallback((novaPaginacao: Partial<PaginacaoAtendentes>) => {
     const paginacaoAtualizada = { ...paginacao, ...novaPaginacao };
     setPaginacao(paginacaoAtualizada);
     atualizarURL(filtros, ordenacao, paginacaoAtualizada);
     buscarAtendentes(filtros, ordenacao, paginacaoAtualizada.paginaAtual, paginacaoAtualizada.itensPorPagina);
-  }, [filtros, ordenacao, paginacao, atualizarURL, buscarAtendentes]);
+  }, [filtros, ordenacao, paginacao, atualizarURL, buscarAtendentes, setPaginacao]);
 
   const handleRecarregar = useCallback(() => {
+    showInfo('Recarregando lista de atendentes...');
     buscarAtendentes();
-  }, [buscarAtendentes]);
+  }, [buscarAtendentes, showInfo]);
 
-  // Efeito de inicialização - executa apenas uma vez
+  // Efeito inicial para carregar dados
   useEffect(() => {
     buscarAtendentes();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-
+  // Evitar execução na página de login ou outras rotas públicas
+  if (pathname === '/login' || pathname === '/changelog') {
+    return null;
+  }
 
   // Renderização de erro
   if (erro) {
@@ -297,6 +336,14 @@ export function AtendentesWrapper({ searchParams }: AtendentesWrapperProps) {
 
   return (
     <div className="space-y-4">
+      {/* Cabeçalho com botão de novo atendente */}
+      <div className="flex items-center justify-end">
+        <Button onClick={() => setModalNovoAtendenteAberto(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Novo Atendente
+        </Button>
+      </div>
+      
       {/* Filtros */}
       {carregando && !atendentes.length ? (
         <FiltrosLoading />
@@ -324,6 +371,13 @@ export function AtendentesWrapper({ searchParams }: AtendentesWrapperProps) {
           onRecarregar={handleRecarregar}
         />
       )}
+      
+      {/* Modal de Novo Atendente */}
+      <ModalNovoAtendente 
+        aberto={modalNovoAtendenteAberto}
+        onFechar={() => setModalNovoAtendenteAberto(false)}
+        onAtendenteCriado={handleRecarregar}
+      />
     </div>
   );
 }

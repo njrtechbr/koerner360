@@ -14,6 +14,7 @@ model Usuario {
   senha               String
   tipoUsuario         TipoUsuario
   ativo               Boolean     @default(true)
+  senhaTemporaria     Boolean     @default(false)
   criadoEm            DateTime    @default(now())
   atualizadoEm        DateTime    @updatedAt
   supervisorId        String?
@@ -25,6 +26,7 @@ model Usuario {
   changelogs          Changelog[]
   supervisor          Usuario?    @relation("SupervisorAtendente", fields: [supervisorId], references: [id])
   supervisoes         Usuario[]   @relation("SupervisorAtendente")
+  atendente           Atendente?  @relation("UsuarioAtendente")
 
   @@map("usuarios")
 }
@@ -197,12 +199,16 @@ model Atendente {
   cpf             String   @unique
   setor           String
   cargo           String
+  endereco        String
+  observacoes     String?
+  usuarioId       String?  @unique
   criadoEm        DateTime @default(now())
   atualizadoEm    DateTime @updatedAt
   
   // Relacionamentos
   avaliacoes      Avaliacao[] @relation("AvaliacaoAtendente")
   auditLogs       AuditLog[] @relation("AuditLogAtendente")
+  usuario         Usuario? @relation("UsuarioAtendente", fields: [usuarioId], references: [id])
 
   @@map("atendentes")
 }

@@ -14,6 +14,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { X, Filter, Search } from 'lucide-react';
+import { useSonnerToast } from '@/hooks/use-sonner-toast';
 
 export interface FiltrosUsuarios {
   busca: string;
@@ -34,6 +35,7 @@ interface FiltrosUsuariosProps {
 }
 
 export function FiltrosUsuariosComponent({ filtros, onFiltrosChange, onLimparFiltros }: FiltrosUsuariosProps) {
+  const { showInfo } = useSonnerToast();
   const [supervisores, setSupervisores] = useState<Supervisor[]>([]);
   const [carregandoSupervisores, setCarregandoSupervisores] = useState(false);
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
@@ -146,7 +148,10 @@ export function FiltrosUsuariosComponent({ filtros, onFiltrosChange, onLimparFil
             <Button
               variant="ghost"
               size="sm"
-              onClick={onLimparFiltros}
+              onClick={() => {
+                onLimparFiltros();
+                showInfo('Filtros de usuários removidos');
+              }}
               className="text-muted-foreground hover:text-foreground"
             >
               <X className="h-4 w-4 mr-1" />
@@ -277,7 +282,11 @@ export function FiltrosUsuariosComponent({ filtros, onFiltrosChange, onLimparFil
               {temFiltrosAtivos() && (
                 <Button
                   variant="ghost"
-                  onClick={onLimparFiltros}
+                  onClick={() => {
+                    onLimparFiltros();
+                    setMostrarFiltros(false);
+                    showInfo('Filtros de usuários removidos');
+                  }}
                 >
                   Limpar Filtros
                 </Button>

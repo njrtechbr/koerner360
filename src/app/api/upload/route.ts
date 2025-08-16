@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '../../../../auth.ts';
+import { auth } from '@/auth';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { z } from 'zod';
+import {
+  createSuccessResponse,
+  createErrorResponse,
+  ErrorCodes,
+  validateAuthentication
+} from '@/lib/api-response';
 
 // Schema de validação para upload
 const uploadSchema = z.object({
@@ -21,11 +27,9 @@ export async function POST(request: NextRequest) {
     // Verificar autenticação
     const session = await auth();
     
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: 'Não autorizado' },
-        { status: 401 }
-      );
+    const authResult = validateAuthentication(session);
+    if (authResult) {
+      return authResult;
     }
 
     // Obter dados do FormData
@@ -38,33 +42,34 @@ export async function POST(request: NextRequest) {
     // Validar parâmetros
     const validacao = uploadSchema.safeParse({ tipo, entidade, entidadeId });
     if (!validacao.success) {
-      return NextResponse.json(
-        { success: false, error: 'Parâmetros inválidos', details: validacao.error.errors },
-        { status: 400 }
+      return createErrorResponse(
+        ErrorCodes.VALIDATION_ERROR,
+        'Parâmetros inválidos',
+        validacao.error.issues
       );
     }
 
     // Validar arquivo
     if (!arquivo) {
-      return NextResponse.json(
-        { success: false, error: 'Nenhum arquivo enviado' },
-        { status: 400 }
+      return createErrorResponse(
+        ErrorCodes.VALIDATION_ERROR,
+        'Nenhum arquivo enviado'
       );
     }
 
     // Validar tipo de arquivo
     if (!arquivo.type.startsWith('image/')) {
-      return NextResponse.json(
-        { success: false, error: 'Apenas arquivos de imagem são permitidos' },
-        { status: 400 }
+      return createErrorResponse(
+        ErrorCodes.VALIDATION_ERROR,
+        'Apenas arquivos de imagem são permitidos'
       );
     }
 
     // Validar tamanho (máximo 5MB)
     if (arquivo.size > 5 * 1024 * 1024) {
-      return NextResponse.json(
-        { success: false, error: 'Arquivo muito grande. Máximo 5MB permitido' },
-        { status: 400 }
+      return createErrorResponse(
+        ErrorCodes.VALIDATION_ERROR,
+        'Arquivo muito grande. Máximo 5MB permitido'
       );
     }
 
@@ -92,23 +97,21 @@ export async function POST(request: NextRequest) {
     // URL pública do arquivo
     const urlPublica = `/uploads/${entidade}/${tipo}/${nomeArquivo}`;
 
-    return NextResponse.json({
-      success: true,
-      data: {
+    return createSuccessResponse(
+      {
         url: urlPublica,
         nomeArquivo,
         tamanho: arquivo.size,
         tipo: arquivo.type
       },
-      message: 'Arquivo enviado com sucesso',
-      timestamp: new Date().toISOString()
-    });
+      'Arquivo enviado com sucesso'
+    );
 
   } catch (error) {
     console.error('Erro no upload:', error);
-    return NextResponse.json(
-      { success: false, error: 'Erro interno do servidor' },
-      { status: 500 }
+    return createErrorResponse(
+      ErrorCodes.INTERNAL_ERROR,
+      'Erro interno do servidor'
     );
   }
 }
@@ -122,20 +125,18 @@ export async function DELETE(request: NextRequest) {
     // Verificar autenticação
     const session = await auth();
     
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: 'Não autorizado' },
-        { status: 401 }
-      );
+    const authResult = validateAuthentication(session);
+    if (authResult) {
+      return authResult;
     }
 
     const { searchParams } = new URL(request.url);
     const url = searchParams.get('url');
 
     if (!url) {
-      return NextResponse.json(
-        { success: false, error: 'URL do arquivo é obrigatória' },
-        { status: 400 }
+      return createErrorResponse(
+        ErrorCodes.VALIDATION_ERROR,
+        'URL do arquivo é obrigatória'
       );
     }
 
@@ -148,17 +149,16 @@ export async function DELETE(request: NextRequest) {
       await unlink(caminhoArquivo);
     }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Arquivo removido com sucesso',
-      timestamp: new Date().toISOString()
-    });
+    return createSuccessResponse(
+      { url },
+      'Arquivo removido com sucesso'
+    );
 
   } catch (error) {
     console.error('Erro ao remover arquivo:', error);
-    return NextResponse.json(
-      { success: false, error: 'Erro interno do servidor' },
-      { status: 500 }
+    return createErrorResponse(
+      ErrorCodes.INTERNAL_ERROR,
+      'Erro interno do servidor'
     );
   }
 }
