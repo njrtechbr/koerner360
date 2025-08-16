@@ -35,9 +35,10 @@
         "name": "next"
       }
     ],
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@/auth": ["./src/auth"],
+      "@/*": ["./src/*", "./*"],
+      "@/auth": ["./auth"],
       "@/components/*": ["./src/components/*"],
       "@/lib/*": ["./src/lib/*"],
       "@/app/*": ["./src/app/*"],
@@ -45,7 +46,6 @@
       "@/hooks/*": ["./src/hooks/*"],
       "@/utils/*": ["./src/utils/*"]
     },
-    "baseUrl": ".",
     "declaration": false,
     "declarationMap": false,
     "sourceMap": true

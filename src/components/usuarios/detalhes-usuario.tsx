@@ -25,8 +25,7 @@ interface Usuario {
   };
   _count?: {
     atendentesSupervisionados?: number;
-    avaliacoes?: number;
-    feedbacks?: number;
+
   };
 }
 
@@ -222,22 +221,12 @@ export function DetalhesUsuario({ usuarioId, onEditar, onFechar }: DetalhesUsuar
                   <p className="text-sm text-blue-600">Atendentes Supervisionados</p>
                 </div>
               )}
-              {usuario._count.avaliacoes !== undefined && (
-                <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <p className="text-2xl font-bold text-green-600">
-                    {usuario._count.avaliacoes}
-                  </p>
-                  <p className="text-sm text-green-600">Avaliações</p>
-                </div>
-              )}
-              {usuario._count.feedbacks !== undefined && (
-                <div className="text-center p-4 bg-purple-50 rounded-lg">
-                  <p className="text-2xl font-bold text-purple-600">
-                    {usuario._count.feedbacks}
-                  </p>
-                  <p className="text-sm text-purple-600">Feedbacks</p>
-                </div>
-              )}
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <p className="text-2xl font-bold text-green-600">
+                  {usuario.ativo ? 'Ativo' : 'Inativo'}
+                </p>
+                <p className="text-sm text-green-600">Status</p>
+              </div>
             </div>
           </CardContent>
         </Card>

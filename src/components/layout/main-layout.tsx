@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { Menu, X, Home, Users, BarChart3, MessageSquare, Settings, LogOut, FileText } from 'lucide-react';
+import { Menu, X, Home, Users, UserCheck, BarChart3, MessageSquare, Settings, LogOut, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -28,17 +28,12 @@ const menuItems = [
     roles: ['ADMIN', 'SUPERVISOR'],
   },
   {
-    title: 'Avaliações',
-    href: '/avaliacoes',
-    icon: BarChart3,
-    roles: ['ADMIN', 'SUPERVISOR', 'ATENDENTE'],
+    title: 'Atendentes',
+    href: '/atendentes',
+    icon: UserCheck,
+    roles: ['ADMIN', 'SUPERVISOR'],
   },
-  {
-    title: 'Feedbacks',
-    href: '/feedbacks',
-    icon: MessageSquare,
-    roles: ['ADMIN', 'SUPERVISOR', 'ATENDENTE'],
-  },
+
   {
     title: 'Configurações',
     href: '/configuracoes',

@@ -8,20 +8,7 @@ import { Users, BarChart3, MessageSquare, TrendingUp } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 // Dados de exemplo para os gráficos
-const avaliacoesData = [
-  { mes: 'Jan', avaliacoes: 12 },
-  { mes: 'Fev', avaliacoes: 19 },
-  { mes: 'Mar', avaliacoes: 15 },
-  { mes: 'Abr', avaliacoes: 22 },
-  { mes: 'Mai', avaliacoes: 18 },
-  { mes: 'Jun', avaliacoes: 25 },
-];
 
-const feedbacksData = [
-  { tipo: 'Positivo', valor: 45, cor: '#10B981' },
-  { tipo: 'Construtivo', valor: 30, cor: '#F59E0B' },
-  { tipo: 'Sugestão', valor: 25, cor: '#3B82F6' },
-];
 
 export default function DashboardPage() {
   const { data: session } = useSession();
@@ -45,9 +32,9 @@ export default function DashboardPage() {
             color: 'text-green-600',
           },
           {
-            title: 'Feedbacks Recebidos',
-            value: '89',
-            description: '+23% em relação ao mês anterior',
+            title: 'Novos Cadastros',
+            value: '14',
+            description: '+25% em relação ao mês anterior',
             icon: MessageSquare,
             color: 'text-purple-600',
           },
@@ -76,9 +63,9 @@ export default function DashboardPage() {
             color: 'text-yellow-600',
           },
           {
-            title: 'Feedbacks da Equipe',
-            value: '34',
-            description: 'Recebidos este mês',
+            title: 'Relatórios Gerados',
+            value: '8',
+            description: 'Este mês',
             icon: MessageSquare,
             color: 'text-purple-600',
           },
@@ -100,8 +87,8 @@ export default function DashboardPage() {
             color: 'text-green-600',
           },
           {
-            title: 'Feedbacks Recebidos',
-            value: '15',
+            title: 'Atendimentos Realizados',
+            value: '127',
             description: 'Este mês',
             icon: MessageSquare,
             color: 'text-purple-600',
@@ -164,61 +151,23 @@ export default function DashboardPage() {
           })}
         </div>
 
-        {/* Charts */}
+        {/* Gráfico de Atividade */}
         {(session?.user?.userType === 'ADMIN' || session?.user?.userType === 'SUPERVISOR') && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Avaliações por Mês */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Avaliações por Mês</CardTitle>
-                <CardDescription>
-                  Número de avaliações realizadas nos últimos 6 meses
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={avaliacoesData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="mes" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="avaliacoes" fill="#3B82F6" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            {/* Distribuição de Feedbacks */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Tipos de Feedback</CardTitle>
-                <CardDescription>
-                  Distribuição dos tipos de feedback recebidos
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={feedbacksData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ tipo, valor }) => `${tipo}: ${valor}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="valor"
-                    >
-                      {feedbacksData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.cor} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Atividade do Sistema</CardTitle>
+              <CardDescription>
+                Resumo das atividades dos últimos 6 meses
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">
+                  Gráficos de atividade serão implementados em breve
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Ações Rápidas */}
@@ -243,16 +192,7 @@ export default function DashboardPage() {
                   </div>
                 </>
               )}
-              {(session?.user?.userType === 'ADMIN' || session?.user?.userType === 'SUPERVISOR') && (
-                <div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                  <h3 className="font-medium">Nova Avaliação</h3>
-                  <p className="text-sm text-gray-600">Criar uma nova avaliação</p>
-                </div>
-              )}
-              <div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                <h3 className="font-medium">Enviar Feedback</h3>
-                <p className="text-sm text-gray-600">Compartilhar feedback com a equipe</p>
-              </div>
+
             </div>
           </CardContent>
         </Card>

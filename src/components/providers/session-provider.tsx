@@ -12,17 +12,17 @@ interface ProvidersProps {
 export function Providers({ children, session }: ProvidersProps) {
   const pathname = usePathname()
   
-  // Rotas públicas que não precisam do SessionProvider
+  // Rotas públicas que precisam de configuração diferente
   const publicRoutes = ['/changelog', '/login']
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
   
-  // Se for rota pública, não usar SessionProvider
-  if (isPublicRoute) {
-    return <>{children}</>
-  }
-  
   return (
-    <SessionProvider session={session}>
+    <SessionProvider 
+      session={session}
+      refetchInterval={isPublicRoute ? 0 : 5 * 60} // Não refetch em rotas públicas
+      refetchOnWindowFocus={!isPublicRoute}
+      refetchWhenOffline={false}
+    >
       {children}
     </SessionProvider>
   )

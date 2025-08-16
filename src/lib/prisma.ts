@@ -36,4 +36,4 @@ export async function verificarConexao() {
 }
 
 // Tipos úteis exportados do Prisma
-export type { Usuario, Avaliacao, Feedback, TipoUsuario, TipoFeedback, Prioridade, StatusFeedback } from '@prisma/client';
+export type { Usuario, TipoUsuario } from '@prisma/client';

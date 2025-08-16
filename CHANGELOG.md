@@ -15,6 +15,27 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ---
 
+## [0.2.5] - 2025-01-27
+
+### 🐛 Correções
+- **CLIENT_FETCH_ERROR**: Resolvido erro de autenticação que impedia o login no Auth.js v5
+  - Corrigida configuração duplicada `baseUrl` no `tsconfig.json`
+  - Corrigidos paths de importação relativos longos para aliases padronizados
+  - Atualizada importação `@/auth` em `src/app/layout.tsx`
+  - Configurado alias `@/auth` para apontar corretamente para arquivo raiz `./auth`
+
+### 🛠️ Melhorias
+- **Configuração TypeScript**: Padronizada estrutura de paths para melhor resolução de módulos
+- **Sistema de Importações**: Substituídas importações relativas por aliases para melhor manutenção
+- **Autenticação**: Otimizada configuração do Auth.js v5 para melhor performance
+
+### 🔧 Técnico
+- **tsconfig.json**: Removida duplicação de `baseUrl` que causava conflitos
+- **Alias de Paths**: Configurados corretamente todos os aliases `@/*` para resolução adequada
+- **Build Process**: Melhorada estabilidade do processo de build com configurações corrigidas
+
+---
+
 ## [0.2.4] - 2025-01-27
 
 ### ✨ Novas Funcionalidades

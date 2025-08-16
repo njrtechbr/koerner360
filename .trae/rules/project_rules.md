@@ -34,6 +34,20 @@ src/
 └── auth.ts              # Configuração do NextAuth
 ```
 
+### Layout Principal
+**REGRA OBRIGATÓRIA**: Todas as páginas do sistema devem utilizar o layout principal (`src/app/layout.tsx`), que inclui:
+- Sidebar de navegação
+- Header com informações do usuário
+- Área de conteúdo principal
+- Sistema de autenticação integrado
+
+**EXCEÇÃO**: Apenas a página de login (`/login`) deve ficar fora do layout principal, utilizando seu próprio layout específico.
+
+**Implementação**:
+- Páginas autenticadas: Usar o layout padrão do App Router
+- Página de login: Implementar layout próprio sem sidebar/header
+- Componentes de layout: Reutilizar componentes em `src/components/layout/`
+
 ## 🎯 Padrões de Desenvolvimento
 
 ### 1. Nomenclatura e Convenções

@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Settings, Save, RefreshCw, Database, Mail, Shield, Bell } from 'lucide-react';
+import { Settings, Save, RefreshCw, Database, Shield, Bell } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function ConfiguracoesPage() {
@@ -21,19 +21,13 @@ export default function ConfiguracoesPage() {
     // Configurações de notificações
     notificacoesEmail: true,
     notificacoesPush: false,
-    notificacoesAvaliacoes: true,
-    notificacoesFeedbacks: true,
     
     // Configurações de sistema
     backupAutomatico: true,
     logAuditoria: true,
     sessaoTimeout: 30,
     
-    // Configurações de avaliação
-    periodoAvaliacaoDefault: 'trimestral',
-    notaMinima: 1,
-    notaMaxima: 5,
-    autoAprovacao: false
+
   });
 
   const handleSalvar = async () => {
@@ -156,32 +150,7 @@ export default function ConfiguracoesPage() {
                 onCheckedChange={(checked) => handleConfigChange('notificacoesPush', checked)}
               />
             </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Notificações de Avaliações</Label>
-                <p className="text-sm text-muted-foreground">
-                  Ser notificado sobre novas avaliações
-                </p>
-              </div>
-              <Switch
-                checked={configuracoes.notificacoesAvaliacoes}
-                onCheckedChange={(checked) => handleConfigChange('notificacoesAvaliacoes', checked)}
-              />
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Notificações de Feedbacks</Label>
-                <p className="text-sm text-muted-foreground">
-                  Ser notificado sobre novos feedbacks
-                </p>
-              </div>
-              <Switch
-                checked={configuracoes.notificacoesFeedbacks}
-                onCheckedChange={(checked) => handleConfigChange('notificacoesFeedbacks', checked)}
-              />
-            </div>
+
           </CardContent>
         </Card>
 
@@ -241,71 +210,7 @@ export default function ConfiguracoesPage() {
           </CardContent>
         </Card>
 
-        {/* Configurações de Avaliação */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5" />
-              Avaliações
-            </CardTitle>
-            <CardDescription>
-              Configurações específicas para o sistema de avaliações
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="notaMinima">Nota Mínima</Label>
-                <Input
-                  id="notaMinima"
-                  type="number"
-                  min="1"
-                  max="5"
-                  value={configuracoes.notaMinima}
-                  onChange={(e) => handleConfigChange('notaMinima', parseInt(e.target.value))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="notaMaxima">Nota Máxima</Label>
-                <Input
-                  id="notaMaxima"
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={configuracoes.notaMaxima}
-                  onChange={(e) => handleConfigChange('notaMaxima', parseInt(e.target.value))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="periodoDefault">Período Padrão</Label>
-                <select
-                  id="periodoDefault"
-                  value={configuracoes.periodoAvaliacaoDefault}
-                  onChange={(e) => handleConfigChange('periodoAvaliacaoDefault', e.target.value)}
-                  className="w-full px-3 py-2 border border-input bg-background rounded-md"
-                >
-                  <option value="mensal">Mensal</option>
-                  <option value="trimestral">Trimestral</option>
-                  <option value="semestral">Semestral</option>
-                  <option value="anual">Anual</option>
-                </select>
-              </div>
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Auto-aprovação de Avaliações</Label>
-                <p className="text-sm text-muted-foreground">
-                  Aprovar automaticamente avaliações concluídas
-                </p>
-              </div>
-              <Switch
-                checked={configuracoes.autoAprovacao}
-                onCheckedChange={(checked) => handleConfigChange('autoAprovacao', checked)}
-              />
-            </div>
-          </CardContent>
-        </Card>
+
 
         <div className="text-center py-4">
           <p className="text-sm text-muted-foreground">

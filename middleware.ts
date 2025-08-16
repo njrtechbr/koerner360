@@ -1,86 +1,39 @@
-import { withAuth } from "next-auth/middleware"
+import { auth } from './auth'
 import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
 
-export default withAuth(
-  function middleware(req) {
-    try {
-    const { pathname } = req.nextUrl
-    const token = req.nextauth.token
+export default auth((req) => {
+  const { pathname } = req.nextUrl
 
-    // Rotas públicas que não precisam de autenticação
-    const publicRoutes = ["/login", "/api/auth", "/changelog"]
-    const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
+  // Rotas públicas que não precisam de autenticação
+  const publicRoutes = ["/login", "/changelog", "/api/auth", "/test-session"]
+  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
 
-    // Se é rota pública, permite acesso
-    if (isPublicRoute) {
-      return NextResponse.next()
-    }
-
-    // Controle de acesso baseado em roles
-    if (token) {
-      const userType = token.userType
-
-      // Rotas apenas para admin
-      if (pathname.startsWith("/usuarios") || pathname.startsWith("/configuracoes")) {
-        if (userType !== "ADMIN" && userType !== "SUPERVISOR") {
-          const dashboardUrl = new URL("/dashboard", req.url)
-          return NextResponse.redirect(dashboardUrl)
-        }
-      }
-
-      // Supervisores não podem acessar configurações
-      if (pathname.startsWith("/configuracoes") && userType !== "ADMIN") {
-        const dashboardUrl = new URL("/dashboard", req.url)
-        return NextResponse.redirect(dashboardUrl)
-      }
-    }
-
+  // Se é rota pública, permite acesso
+  if (isPublicRoute) {
     return NextResponse.next()
-    } catch (error) {
-      // Captura erros JWT (tokens corrompidos) e redireciona para login
-      console.error('Erro no middleware (provavelmente JWT corrompido):', error)
-      const loginUrl = new URL('/login', req.url)
-      const response = NextResponse.redirect(loginUrl)
-      
-      // Limpa cookies do NextAuth para forçar nova autenticação
-      response.cookies.delete('next-auth.session-token')
-      response.cookies.delete('__Secure-next-auth.session-token')
-      response.cookies.delete('next-auth.csrf-token')
-      response.cookies.delete('__Secure-next-auth.csrf-token')
-      
-      return response
-    }
-  },
-  {
-    callbacks: {
-      authorized: ({ token, req }) => {
-        const { pathname } = req.nextUrl
-        const publicRoutes = ["/login", "/api/auth", "/changelog"]
-        const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
-        
-        // Permite acesso a rotas públicas sem token
-        if (isPublicRoute) {
-          return true
-        }
-        
-        // Para outras rotas, requer token
-        return !!token
-      }
-    },
   }
-)
+
+  // Se não há sessão e não é rota pública, redireciona para login
+  if (!req.auth) {
+    const loginUrl = new URL("/login", req.url)
+    return NextResponse.redirect(loginUrl)
+  }
+
+  // Se há sessão, permite acesso
+  return NextResponse.next()
+})
 
 export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - changelog (public changelog page)
+     * - api/auth (NextAuth routes)
+     * - test-session (página de teste)
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|changelog).*)",
+    "/((?!_next/static|_next/image|favicon.ico|changelog|api/auth|test-session).*)",
   ],
 }

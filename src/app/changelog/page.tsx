@@ -1,7 +1,12 @@
 'use client';
 
+// Ajuste: forçar recompilação do changelog
+
+
 import { useState, useEffect, useCallback } from 'react';
 import { PublicLayout } from '@/components/layout/public-layout';
+import { MainLayout } from '@/components/layout/main-layout';
+import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -157,6 +162,10 @@ export default function ChangelogPage() {
     temProximaPagina: false,
     temPaginaAnterior: false
   });
+
+  // Determina dinamicamente o layout com base no status da sessão
+  const { status } = useSession();
+  const LayoutWrapper = status === 'authenticated' ? MainLayout : PublicLayout;
 
   const carregarChangelogs = useCallback(async (pagina = 1) => {
     try {
@@ -548,7 +557,7 @@ export default function ChangelogPage() {
 
   if (loading) {
     return (
-      <PublicLayout>
+      <LayoutWrapper>
         <div className="container mx-auto py-8 px-4 max-w-6xl">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
@@ -557,12 +566,12 @@ export default function ChangelogPage() {
             </div>
           </div>
         </div>
-      </PublicLayout>
+      </LayoutWrapper>
     );
   }
 
   return (
-    <PublicLayout>
+    <LayoutWrapper>
       <div className="container mx-auto py-8 px-4 max-w-6xl">
         {/* Header */}
         <div className="mb-8">
@@ -720,6 +729,6 @@ export default function ChangelogPage() {
           </div>
         )}
       </div>
-    </PublicLayout>
+    </LayoutWrapper>
   );
 }

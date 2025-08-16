@@ -30,18 +30,21 @@ model Usuario {
 }
 
 model Avaliacao {
-  id           String   @id @default(cuid())
+  id           String     @id @default(cuid())
   nota         Int
   comentario   String?
   periodo      String
-  criadoEm     DateTime @default(now())
-  atualizadoEm DateTime @updatedAt
-  avaliadoId   String
+  criadoEm     DateTime   @default(now())
+  atualizadoEm DateTime   @updatedAt
+  avaliadoId   String?
   avaliadorId  String
-  avaliado     Usuario  @relation("AvaliacaoAvaliado", fields: [avaliadoId], references: [id])
-  avaliador    Usuario  @relation("AvaliacaoAvaliador", fields: [avaliadorId], references: [id])
+  atendenteId  String?
+  avaliado     Usuario?   @relation("AvaliacaoAvaliado", fields: [avaliadoId], references: [id])
+  avaliador    Usuario    @relation("AvaliacaoAvaliador", fields: [avaliadorId], references: [id])
+  atendente    Atendente? @relation("AvaliacaoAtendente", fields: [atendenteId], references: [id])
 
   @@unique([avaliadoId, avaliadorId, periodo])
+  @@unique([atendenteId, avaliadorId, periodo])
   @@map("avaliacoes")
 }
 
@@ -98,8 +101,9 @@ enum StatusFeedback {
 }
 
 model AuditLog {
-  id              String    @id @default(cuid())
+  id              String     @id @default(cuid())
   usuarioId       String?
+  atendenteId     String?
   acao            String
   nomeTabela      String?
   registroId      String?
@@ -107,8 +111,9 @@ model AuditLog {
   dadosNovos      Json?
   enderecoIp      String?
   userAgent       String?
-  criadoEm        DateTime  @default(now())
-  usuario         Usuario?  @relation(fields: [usuarioId], references: [id])
+  criadoEm        DateTime   @default(now())
+  usuario         Usuario?   @relation(fields: [usuarioId], references: [id])
+  atendente       Atendente? @relation("AuditLogAtendente", fields: [atendenteId], references: [id])
 
   @@map("audit_logs")
 }
@@ -175,4 +180,38 @@ enum PrioridadeChangelog {
   CRITICA
 
   @@map("prioridade_changelog")
+}
+
+model Atendente {
+  id              String   @id @default(cuid())
+  nome            String
+  email           String   @unique
+  status          StatusAtendente @default(ATIVO)
+  avatarUrl       String?
+  foto            Bytes?
+  telefone        String
+  portaria        String
+  dataAdmissao    DateTime
+  dataNascimento  DateTime
+  rg              String   @unique
+  cpf             String   @unique
+  setor           String
+  cargo           String
+  criadoEm        DateTime @default(now())
+  atualizadoEm    DateTime @updatedAt
+  
+  // Relacionamentos
+  avaliacoes      Avaliacao[] @relation("AvaliacaoAtendente")
+  auditLogs       AuditLog[] @relation("AuditLogAtendente")
+
+  @@map("atendentes")
+}
+
+enum StatusAtendente {
+  ATIVO
+  FERIAS
+  AFASTADO
+  INATIVO
+
+  @@map("status_atendente")
 }

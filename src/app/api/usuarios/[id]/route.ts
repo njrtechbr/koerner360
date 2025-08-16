@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/auth';
+import { auth } from '../../../../../auth.ts';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
@@ -22,7 +21,7 @@ interface RouteParams {
 // GET /api/usuarios/[id] - Obter usuário específico
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
@@ -59,12 +58,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             ativo: true,
           },
         },
-        _count: {
-          select: {
-            avaliacoesRecebidas: true,
-            avaliacoesFeitas: true,
-          },
-        },
+
       },
     });
 
@@ -98,7 +92,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // PUT /api/usuarios/[id] - Atualizar usuário
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
@@ -181,8 +175,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         email: true,
         tipoUsuario: true,
         ativo: true,
-        criadoEm: true,
-        atualizadoEm: true,
+        criado_em: true,
+        atualizado_em: true,
         supervisorId: true,
         supervisor: {
           select: {
@@ -231,7 +225,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 // DELETE /api/usuarios/[id] - Desativar usuário
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }

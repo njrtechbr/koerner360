@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/auth';
+import { auth } from '../../../../auth.ts';
 import { z } from 'zod';
 
 // Schema de validação para criar changelog
@@ -142,7 +141,7 @@ export async function GET(request: NextRequest) {
 // POST - Criar novo changelog
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     
     if (!session?.user) {
       return NextResponse.json(

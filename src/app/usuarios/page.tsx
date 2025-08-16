@@ -36,8 +36,6 @@ interface Usuario {
   };
   _count?: {
     atendentesSupervisionados?: number;
-    avaliacoes?: number;
-    feedbacks?: number;
   };
 }
 
@@ -87,24 +85,29 @@ export default function UsuariosPage() {
   });
 
   // Carregar usuários
-  const carregarUsuarios = useCallback(async () => {
+  const carregarUsuarios = useCallback(async (opcoes?: {
+    paginaAtual?: number;
+    itensPorPagina?: number;
+    filtrosCustomizados?: FiltrosUsuarios;
+  }) => {
     try {
       setCarregando(true);
       setErro(null);
 
-      // Usar valores padrão se a paginação não estiver inicializada
-      const paginaAtual = paginacao?.paginaAtual || 1;
-      const itensPorPagina = paginacao?.itensPorPagina || 10;
+      // Usar valores dos parâmetros ou estados atuais
+      const paginaAtual = opcoes?.paginaAtual ?? paginacao.paginaAtual;
+      const itensPorPagina = opcoes?.itensPorPagina ?? paginacao.itensPorPagina;
+      const filtrosParaUsar = opcoes?.filtrosCustomizados ?? filtros;
 
       const params = new URLSearchParams({
         pagina: paginaAtual.toString(),
         limite: itensPorPagina.toString(),
       });
 
-      if (filtros.busca) params.append('busca', filtros.busca);
-      if (filtros.tipoUsuario) params.append('tipoUsuario', filtros.tipoUsuario);
-      if (filtros.ativo) params.append('ativo', filtros.ativo);
-      if (filtros.supervisorId) params.append('supervisorId', filtros.supervisorId);
+      if (filtrosParaUsar.busca) params.append('busca', filtrosParaUsar.busca);
+      if (filtrosParaUsar.tipoUsuario) params.append('tipoUsuario', filtrosParaUsar.tipoUsuario);
+      if (filtrosParaUsar.ativo) params.append('ativo', filtrosParaUsar.ativo);
+      if (filtrosParaUsar.supervisorId) params.append('supervisorId', filtrosParaUsar.supervisorId);
 
       const response = await fetch(`/api/usuarios?${params}`);
       const data = await response.json();
@@ -149,19 +152,24 @@ export default function UsuariosPage() {
     } finally {
       setCarregando(false);
     }
-  }, [filtros, paginacao, router]);
+  }, [router]);
 
-  // Efeito para carregar usuários
+  // Efeito para carregar usuários na inicialização
   useEffect(() => {
     carregarUsuarios();
-  }, [carregarUsuarios]);
+  }, []);
 
-  // Efeito separado para mudanças de paginação
+  // Efeito para mudanças de filtros
   useEffect(() => {
-    if (paginacao.paginaAtual > 0) { // Só executa se paginaAtual foi inicializada
-      carregarUsuarios();
+    carregarUsuarios({ paginaAtual: 1, filtrosCustomizados: filtros });
+  }, [filtros.busca, filtros.tipoUsuario, filtros.ativo, filtros.supervisorId]);
+
+  // Efeito para mudanças de paginação
+  useEffect(() => {
+    if (paginacao.paginaAtual > 1) { // Só executa para páginas diferentes da primeira
+      carregarUsuarios({ paginaAtual: paginacao.paginaAtual, itensPorPagina: paginacao.itensPorPagina });
     }
-  }, [carregarUsuarios, paginacao.paginaAtual, paginacao.itensPorPagina]);
+  }, [paginacao.paginaAtual, paginacao.itensPorPagina]);
 
   // Funções de manipulação dos modais
   const abrirModal = (tipo: ModalTipo, usuario?: Usuario) => {
@@ -178,18 +186,18 @@ export default function UsuariosPage() {
 
   const handleSalvarUsuario = () => {
     fecharModal();
-    carregarUsuarios();
+    carregarUsuarios({ paginaAtual: paginacao.paginaAtual });
   };
 
   const handleDesativarUsuario = () => {
     fecharModal();
-    carregarUsuarios();
+    carregarUsuarios({ paginaAtual: paginacao.paginaAtual });
   };
 
   // Funções de manipulação de filtros e paginação
   const handleFiltrosChange = (novosFiltros: FiltrosUsuarios) => {
     setFiltros(novosFiltros);
-    setPaginacao(prev => ({ ...prev, paginaAtual: 1 })); // Reset para primeira página
+    // A atualização será feita pelo useEffect de filtros
   };
 
   const handleLimparFiltros = () => {

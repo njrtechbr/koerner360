@@ -22,15 +22,15 @@ export interface BuildInfo {
 }
 
 export const buildInfo: BuildInfo = {
-  "version": "0.2.4-dev.2025-08-15T07-45-25",
+  "version": "0.2.4-dev.2025-08-16T00-12-23",
   "branch": "master",
-  "commit": "988f15b88f0a4be305dfb8bc409a5f5ff9c3b4bf",
-  "commitShort": "988f15b",
-  "commitMessage": "chore: atualiza versão para 0.2.4 e changelog\n\n- Atualiza package.json para versão 0.2.4\n- Adiciona entrada no CHANGELOG.md para versão 0.2.4\n- Atualiza build-info.json com informações atualizadas\n- Documenta implementação da página pública de changelog",
+  "commit": "d4be3894d2b0b65cdcf5c20f8bb92b52ea93f2e3",
+  "commitShort": "d4be389",
+  "commitMessage": "chore: atualiza versão e changelog para 0.2.4",
   "hasUncommittedChanges": true,
-  "lastCommitDate": "2025-08-14 22:52:06 -0300",
-  "buildDate": "2025-08-15T07:45:25.713Z",
-  "buildTimestamp": 1755243925713,
+  "lastCommitDate": "2025-08-15 04:45:57 -0300",
+  "buildDate": "2025-08-16T00:12:23.050Z",
+  "buildTimestamp": 1755303143050,
   "environment": "development",
   "nodeVersion": "v22.18.0",
   "platform": "win32",
