@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useSonnerToast } from '@/hooks/use-sonner-toast';
+import { logError } from '@/lib/error-utils';
 
 interface UploadFotoProps {
   /** URL atual da foto */
@@ -114,7 +115,7 @@ function UploadFotoComponent({
       onUploadCompleto?.(resultado.data.url);
 
     } catch (error) {
-      console.error('Erro no upload:', error);
+      logError('Erro no upload', error);
       showError(
         `Erro no upload: ${error instanceof Error ? error.message : 'Erro inesperado no upload'}`
       );
@@ -187,7 +188,7 @@ function UploadFotoComponent({
       );
       onRemover?.();
     } catch (error) {
-      console.error('Erro ao remover foto:', error);
+      logError('Erro ao remover foto', error);
       showError(
         'Erro ao remover foto: Não foi possível excluir a imagem'
       );

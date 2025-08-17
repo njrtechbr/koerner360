@@ -2,6 +2,8 @@
  * Utilitários para gerenciamento de autenticação e sessão
  */
 
+import { logError } from '@/lib/error-utils';
+
 /**
  * Lista de cookies do NextAuth que devem ser limpos
  */
@@ -88,7 +90,7 @@ export function forceLogout(redirectUrl: string = '/login'): void {
       window.location.href = redirectUrl
     }, 100)
   } catch (error) {
-    console.error('Erro durante logout forçado:', error)
+    logError('Erro durante logout forçado', error)
     // Fallback: redireciona mesmo com erro
     window.location.href = redirectUrl
   }
@@ -117,7 +119,7 @@ export function isJWTError(error: unknown): boolean {
  * Hook para detectar e tratar erros de autenticação
  */
 export function handleAuthError(error: unknown): void {
-  console.error('Erro de autenticação detectado:', error)
+  logError('Erro de autenticação detectado', error)
 
   if (isJWTError(error)) {
     console.log('Erro JWT detectado, executando limpeza de sessão...')

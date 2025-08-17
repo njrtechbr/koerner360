@@ -2,7 +2,6 @@
 
 import { SessionProvider } from "next-auth/react"
 import type { Session } from "next-auth"
-import { usePathname } from "next/navigation"
 
 interface ProvidersProps {
   children: React.ReactNode
@@ -10,17 +9,12 @@ interface ProvidersProps {
 }
 
 export function Providers({ children, session }: ProvidersProps) {
-  const pathname = usePathname()
-  
-  // Rotas públicas que precisam de configuração diferente
-  const publicRoutes = ['/changelog', '/login']
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
-  
   return (
     <SessionProvider 
       session={session}
-      refetchInterval={isPublicRoute ? 0 : 5 * 60} // Não refetch em rotas públicas
-      refetchOnWindowFocus={!isPublicRoute}
+      basePath="/api/auth"
+      refetchInterval={0}
+      refetchOnWindowFocus={false}
       refetchWhenOffline={false}
     >
       {children}

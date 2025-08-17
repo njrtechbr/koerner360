@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import { useSonnerToast } from '@/hooks/use-sonner-toast';
+import { logError } from '@/lib/error-utils';
 
 interface Usuario {
   id: string;
@@ -57,7 +58,7 @@ export function ConfirmarDesativacao({ usuario, aberto, onConfirmar, onCancelar 
 
       onConfirmar();
     } catch (error) {
-      console.error('Erro ao processar usuário:', error);
+      logError('Erro ao processar usuário', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       setErro(errorMessage);
       // Notificação de erro já foi mostrada acima

@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { logError } from '@/lib/error-utils';
 
 // Configuração global do Prisma Client
 const globalForPrisma = globalThis as unknown as {
@@ -30,7 +31,7 @@ export async function verificarConexao() {
     console.log('✅ Conexão com o banco de dados estabelecida');
     return true;
   } catch (error) {
-    console.error('❌ Erro na conexão com o banco de dados:', error);
+    logError('❌ Erro na conexão com o banco de dados', error);
     return false;
   }
 }

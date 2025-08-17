@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, User, Edit, History } from 'lucide-react';
 import Link from 'next/link';
 import { formatarCPF, formatarTelefone } from '@/lib/validations/atendente';
+import { logError } from '@/lib/error-utils';
 
 interface PageProps {
   params: {
@@ -69,7 +70,7 @@ async function buscarAtendente(id: string) {
       avatarUrl: atendente.avatarUrl || undefined
     };
   } catch (error) {
-    console.error('Erro ao buscar atendente:', error);
+    logError('Erro ao buscar atendente', error);
     return null;
   }
 }

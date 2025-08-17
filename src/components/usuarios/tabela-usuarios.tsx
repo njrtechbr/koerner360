@@ -79,7 +79,7 @@ function TabelaUsuariosComponent({
     }));
   }, []);
 
-  const usuariosOrdenados = [...usuarios].sort((a, b) => {
+  const usuariosOrdenados = [...(usuarios || [])].sort((a, b) => {
     const { coluna, direcao } = ordenacao;
     let valorA: string | number;
     let valorB: string | number;
@@ -212,7 +212,7 @@ function TabelaUsuariosComponent({
     );
   }
 
-  if (usuarios.length === 0) {
+  if (!usuarios || usuarios.length === 0) {
     return (
       <div className="border rounded-lg p-8 text-center">
         <p className="text-muted-foreground">Nenhum usuário encontrado.</p>

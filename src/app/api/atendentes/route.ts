@@ -4,7 +4,7 @@
  * POST /api/atendentes - Cria novo atendente
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { 
@@ -23,6 +23,7 @@ import {
   validatePermissions,
   ErrorCodes 
 } from '@/lib/api-response';
+import { logError } from '@/lib/error-utils';
 
 
 /**
@@ -138,7 +139,7 @@ export async function GET(request: NextRequest) {
     );
 
   } catch (error) {
-    console.error('Erro ao buscar atendentes:', error);
+    logError('Erro ao buscar atendentes', error);
     
     if (error instanceof Error && error.name === 'ZodError') {
       return createErrorResponse(
@@ -262,7 +263,7 @@ export async function POST(request: NextRequest) {
     return createSuccessResponse(atendenteFormatado, 'Atendente criado com sucesso', 201);
 
   } catch (error) {
-    console.error('Erro ao criar atendente:', error);
+    logError('Erro ao criar atendente', error);
     
     if (error instanceof Error && error.name === 'ZodError') {
       return createErrorResponse(

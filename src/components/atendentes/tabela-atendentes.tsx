@@ -53,6 +53,7 @@ import {
   ArrowUpDown
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { logError } from '@/lib/error-utils';
 import { formatarCPF, formatarTelefone } from '@/lib/validations/atendente';
 import { BotaoCriarUsuario } from './BotaoCriarUsuario';
 import { ModalVisualizarAtendente } from './ModalVisualizarAtendente';
@@ -135,7 +136,7 @@ function TabelaAtendentesComponent({
       
       onRecarregar();
     } catch (error) {
-      console.error('Erro ao excluir atendente:', error);
+      logError('Erro ao excluir atendente', error);
       toast.error(
         error instanceof Error 
           ? error.message 

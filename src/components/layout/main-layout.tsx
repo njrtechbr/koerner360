@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { Menu, X, Home, Users, UserCheck, Settings, LogOut, FileText } from 'lucide-react';
+import { Menu, X, Home, Users, UserCheck, Settings, LogOut, FileText, Trophy, TrendingUp, BarChart3, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +22,12 @@ const menuItems = [
     roles: ['ADMIN', 'SUPERVISOR', 'ATENDENTE'],
   },
   {
+    title: 'Dashboard Consultor',
+    href: '/consultor',
+    icon: Home,
+    roles: ['CONSULTOR'],
+  },
+  {
     title: 'Usuários',
     href: '/usuarios',
     icon: Users,
@@ -33,7 +39,30 @@ const menuItems = [
     icon: UserCheck,
     roles: ['ADMIN', 'SUPERVISOR'],
   },
-
+  {
+    title: 'Rankings',
+    href: '/consultor/rankings',
+    icon: Trophy,
+    roles: ['CONSULTOR'],
+  },
+  {
+    title: 'Performance',
+    href: '/consultor/performance',
+    icon: TrendingUp,
+    roles: ['CONSULTOR'],
+  },
+  {
+    title: 'Comparativos',
+    href: '/consultor/comparativos',
+    icon: BarChart3,
+    roles: ['CONSULTOR'],
+  },
+  {
+    title: 'Gamificação',
+    href: '/consultor/gamificacao',
+    icon: Award,
+    roles: ['CONSULTOR'],
+  },
   {
     title: 'Configurações',
     href: '/configuracoes',
@@ -44,7 +73,7 @@ const menuItems = [
     title: 'Changelog',
     href: '/changelog',
     icon: FileText,
-    roles: ['ADMIN', 'SUPERVISOR', 'ATENDENTE'],
+    roles: ['ADMIN', 'SUPERVISOR', 'ATENDENTE', 'CONSULTOR'],
   },
 ];
 

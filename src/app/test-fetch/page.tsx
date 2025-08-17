@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { logError } from '@/lib/error-utils';
 
 /**
  * Página de teste para verificar problemas com fetch
@@ -32,7 +33,7 @@ export default function TestFetchPage() {
       
       setResultado(JSON.stringify(data, null, 2));
     } catch (error) {
-      console.error('Erro no teste de fetch:', error);
+      logError('Erro no teste de fetch', error);
       setResultado(`Erro: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     } finally {
       setCarregando(false);
@@ -60,7 +61,7 @@ export default function TestFetchPage() {
       
       setResultado(JSON.stringify(data, null, 2));
     } catch (error) {
-      console.error('Erro no teste de sessão:', error);
+      logError('Erro no teste de sessão', error);
       setResultado(`Erro: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     } finally {
       setCarregando(false);

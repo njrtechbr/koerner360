@@ -1,16 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { auth } from '@/auth';
 import { z } from 'zod';
 import { 
   createSuccessResponse, 
   createErrorResponse, 
   createPaginatedResponse,
-  validateAuthentication,
-  validatePermissions,
   ErrorCodes 
 } from '@/lib/api-response';
-import { TipoUsuario } from '@prisma/client';
+import { logError } from '@/lib/error-utils';
 
 // Schema de validação para criar changelog
 const criarChangelogSchema = z.object({
@@ -135,7 +132,7 @@ export async function GET(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('Erro ao buscar changelogs:', error);
+    logError('Erro ao buscar changelogs', error);
     return createErrorResponse(
       ErrorCodes.INTERNAL_ERROR,
       'Erro interno do servidor'
@@ -218,7 +215,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    console.error('Erro ao criar changelog:', error);
+    logError('Erro ao criar changelog', error);
     return createErrorResponse(
       ErrorCodes.INTERNAL_ERROR,
       'Erro interno do servidor'

@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { StatusAtendente } from '@/types/atendente';
+import { logError } from '@/lib/error-utils';
 
 /**
  * Gera uma senha temporária aleatória
@@ -126,7 +127,7 @@ export async function validarCriacaoUsuario(atendenteId: string): Promise<{
       },
     };
   } catch (error) {
-    console.error('Erro ao validar criação de usuário:', error);
+    logError('Erro ao validar criação de usuário', error);
     return {
       valido: false,
       erro: 'Erro interno do servidor',

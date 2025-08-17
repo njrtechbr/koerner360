@@ -1,15 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { auth } from '@/auth';
 import { z } from 'zod';
 import { 
   createSuccessResponse, 
   createErrorResponse, 
-  validateAuthentication,
-  validatePermissions,
   ErrorCodes 
 } from '@/lib/api-response';
-import { TipoUsuario } from '@prisma/client';
+import { logError } from '@/lib/error-utils';
 
 // Schema de validação para criar item do changelog
 const criarItemSchema = z.object({
@@ -27,12 +24,13 @@ interface RouteParams {
 
 // GET - Listar itens do changelog
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: RouteParams
 ) {
   try {
+    const { id } = await params;
     const itens = await prisma.changelogItem.findMany({
-      where: { changelogId: params.id },
+      where: { changelogId: id },
       orderBy: {
         ordem: 'asc'
       }
@@ -40,7 +38,7 @@ export async function GET(
     
     return createSuccessResponse(itens);
   } catch (error) {
-    console.error('Erro ao buscar itens do changelog:', error);
+    logError('Erro ao buscar itens do changelog', error);
     return createErrorResponse(
       ErrorCodes.INTERNAL_ERROR,
       'Erro interno do servidor'
@@ -54,6 +52,7 @@ export async function POST(
   { params }: RouteParams
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     
     const authResult = validateAuthentication(session);
@@ -69,7 +68,7 @@ export async function POST(
     
     // Verificar se o changelog existe
     const changelogExistente = await prisma.changelog.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
     
     if (!changelogExistente) {
@@ -84,7 +83,7 @@ export async function POST(
     
     const item = await prisma.changelogItem.create({
       data: {
-        changelogId: params.id,
+        changelogId: id,
         tipo: dadosValidados.tipo,
         titulo: dadosValidados.titulo,
         descricao: dadosValidados.descricao,
@@ -105,7 +104,7 @@ export async function POST(
       );
     }
     
-    console.error('Erro ao criar item do changelog:', error);
+    logError('Erro ao criar item do changelog', error);
     return createErrorResponse(
       ErrorCodes.INTERNAL_ERROR,
       'Erro interno do servidor'

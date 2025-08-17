@@ -27,6 +27,21 @@ model Usuario {
   supervisor          Usuario?    @relation("SupervisorAtendente", fields: [supervisorId], references: [id])
   supervisoes         Usuario[]   @relation("SupervisorAtendente")
   atendente           Atendente?  @relation("UsuarioAtendente")
+  
+  // Campos migrados do Supabase
+  telefone            String?
+  portaria            String?
+  situacao            String?
+  dataAdmissao        DateTime?
+  dataNascimento      DateTime?
+  rg                  String?
+  cpf                 String?
+  avatarUrl           String?
+  accessType          String?
+  
+  // Controle de migração
+  migradoSupabase     Boolean     @default(false)
+  supabaseId          String?
 
   @@map("usuarios")
 }
@@ -44,6 +59,17 @@ model Avaliacao {
   avaliado     Usuario?   @relation("AvaliacaoAvaliado", fields: [avaliadoId], references: [id])
   avaliador    Usuario    @relation("AvaliacaoAvaliador", fields: [avaliadorId], references: [id])
   atendente    Atendente? @relation("AvaliacaoAtendente", fields: [atendenteId], references: [id])
+  
+  // Campos de migração do Supabase
+  migradoSupabase     Boolean     @default(false)
+  supabaseId          String?
+  supabaseAttendantId String?
+  
+  // Campos para gamificação
+  ipOrigem            String?
+  userAgent           String?
+  avaliadorNome       String?
+  avaliadorEmail      String?
 
   @@unique([avaliadoId, avaliadorId, periodo])
   @@unique([atendenteId, avaliadorId, periodo])
@@ -71,6 +97,7 @@ enum TipoUsuario {
   ADMIN
   SUPERVISOR
   ATENDENTE
+  CONSULTOR
 
   @@map("tipo_usuario")
 }
@@ -209,6 +236,11 @@ model Atendente {
   avaliacoes      Avaliacao[] @relation("AvaliacaoAtendente")
   auditLogs       AuditLog[] @relation("AuditLogAtendente")
   usuario         Usuario? @relation("UsuarioAtendente", fields: [usuarioId], references: [id])
+  
+  // Relacionamentos de gamificação
+  gamificacao     GamificacaoAtendente?
+  conquistas      ConquistaAtendente[]
+  metricas        MetricaPerformance[]
 
   @@map("atendentes")
 }
@@ -220,4 +252,160 @@ enum StatusAtendente {
   INATIVO
 
   @@map("status_atendente")
+}
+
+// ===== MODELOS DE GAMIFICAÇÃO =====
+
+model GamificacaoAtendente {
+  id                String    @id @default(cuid())
+  atendenteId       String    @unique
+  pontuacaoTotal    Int       @default(0)
+  nivel             Int       @default(1)
+  experiencia       Int       @default(0)
+  sequenciaAtual    Int       @default(0) // Dias consecutivos com boa avaliação
+  melhorSequencia   Int       @default(0)
+  ultimaAtualizacao DateTime  @default(now())
+  criadoEm          DateTime  @default(now())
+  atualizadoEm      DateTime  @updatedAt
+  
+  atendente         Atendente @relation(fields: [atendenteId], references: [id], onDelete: Cascade)
+  
+  @@map("gamificacao_atendentes")
+}
+
+model Conquista {
+  id          String    @id @default(cuid())
+  nome        String    @unique
+  descricao   String
+  icone       String
+  tipo        TipoConquista
+  categoria   CategoriaConquista
+  requisito   Json      // Critérios para obter a conquista
+  pontos      Int       @default(0)
+  ativo       Boolean   @default(true)
+  ordem       Int       @default(0)
+  criadoEm    DateTime  @default(now())
+  atualizadoEm DateTime @updatedAt
+  
+  atendentes  ConquistaAtendente[]
+  
+  @@map("conquistas")
+}
+
+model ConquistaAtendente {
+  id            String    @id @default(cuid())
+  atendenteId   String
+  conquistaId   String
+  obtidaEm      DateTime  @default(now())
+  pontosGanhos  Int       @default(0)
+  
+  atendente     Atendente @relation(fields: [atendenteId], references: [id], onDelete: Cascade)
+  conquista     Conquista @relation(fields: [conquistaId], references: [id], onDelete: Cascade)
+  
+  @@unique([atendenteId, conquistaId])
+  @@map("conquistas_atendentes")
+}
+
+model MetricaPerformance {
+  id                    String    @id @default(cuid())
+  atendenteId           String
+  periodo               String    // "2025-01", "2025-Q1", "2025", etc.
+  tipoPeríodo           TipoPeriodo
+  totalAvaliacoes       Int       @default(0)
+  mediaNotas            Decimal   @default(0) @db.Decimal(3,2)
+  notasExcelentes       Int       @default(0) // Notas 5
+  notasBoas             Int       @default(0) // Notas 4
+  notasRegulares        Int       @default(0) // Notas 3
+  notasRuins            Int       @default(0) // Notas 1-2
+  percentualSatisfacao  Decimal   @default(0) @db.Decimal(5,2)
+  posicaoRanking        Int?
+  posicaoRankingSetor   Int?
+  pontuacaoPeriodo      Int       @default(0)
+  sequenciaDias         Int       @default(0)
+  criadoEm              DateTime  @default(now())
+  atualizadoEm          DateTime  @updatedAt
+  
+  atendente             Atendente @relation(fields: [atendenteId], references: [id], onDelete: Cascade)
+  
+  @@unique([atendenteId, periodo, tipoPeríodo])
+  @@index([periodo, tipoPeríodo])
+  @@index([posicaoRanking])
+  @@map("metricas_performance")
+}
+
+model ConfiguracaoGamificacao {
+  id                String    @id @default(cuid())
+  chave             String    @unique
+  valor             Json
+  descricao         String?
+  ativo             Boolean   @default(true)
+  criadoEm          DateTime  @default(now())
+  atualizadoEm      DateTime  @updatedAt
+  
+  @@map("configuracao_gamificacao")
+}
+
+model PeriodoGamificacao {
+  id          String    @id @default(cuid())
+  nome        String    @unique
+  descricao   String?
+  dataInicio  DateTime
+  dataFim     DateTime
+  ativo       Boolean   @default(false)
+  configuracao Json?    // Configurações específicas do período
+  criadoEm    DateTime  @default(now())
+  atualizadoEm DateTime @updatedAt
+  
+  @@map("periodos_gamificacao")
+}
+
+model DadosMigracaoSupabase {
+  id                  String    @id @default(cuid())
+  tabelaOrigem        String
+  tabelaDestino       String
+  totalRegistros      Int
+  registrosMigrados   Int
+  registrosComErro    Int       @default(0)
+  dataInicioMigracao  DateTime
+  dataFimMigracao     DateTime?
+  status              String    @default("em_andamento")
+  observacoes         String?
+  checksumOrigem      String?
+  checksumDestino     String?
+  criadoEm            DateTime  @default(now())
+  atualizadoEm        DateTime  @updatedAt
+  
+  @@map("dados_migracao_supabase")
+}
+
+// ===== ENUMS DE GAMIFICAÇÃO =====
+
+enum TipoConquista {
+  BRONZE
+  PRATA
+  OURO
+  PLATINA
+  DIAMANTE
+  
+  @@map("tipo_conquista")
+}
+
+enum CategoriaConquista {
+  VOLUME        // Baseada em quantidade de avaliações
+  QUALIDADE     // Baseada em notas altas
+  CONSISTENCIA  // Baseada em regularidade
+  ESPECIAL      // Conquistas únicas/sazonais
+  TEMPO_SERVICO // Baseada em tempo de trabalho
+  
+  @@map("categoria_conquista")
+}
+
+enum TipoPeriodo {
+  MENSAL
+  TRIMESTRAL
+  SEMESTRAL
+  ANUAL
+  PERSONALIZADO
+  
+  @@map("tipo_periodo")
 }

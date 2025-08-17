@@ -23,6 +23,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useSonnerToast } from '@/hooks/use-sonner-toast';
+import { logError } from '@/lib/error-utils';
 
 interface AtendentesWrapperProps {
   searchParams: {
@@ -198,14 +199,14 @@ export function AtendentesWrapper({ searchParams }: AtendentesWrapperProps) {
       const data = await response.json();
       
       if (data.success) {
-        setAtendentes(data.data.atendentes || []);
+        setAtendentes(data.data || []);
         setPaginacao(prev => ({
           ...prev,
-          ...data.data.paginacao
+          ...data.paginacao
         }));
         
         // Notificação informativa sobre os resultados
-        const totalAtendentes = data.data.paginacao?.totalItens || 0;
+        const totalAtendentes = data.paginacao?.totalItens || 0;
         if (totalAtendentes === 0) {
           showInfo('Nenhum atendente encontrado com os filtros aplicados');
         } else {
@@ -215,10 +216,10 @@ export function AtendentesWrapper({ searchParams }: AtendentesWrapperProps) {
           }
         }
       } else {
-        throw new Error(data.error || 'Erro ao carregar atendentes');
+        throw new Error(data.error?.message || data.error || 'Erro ao carregar atendentes');
       }
     } catch (error) {
-      console.error('Erro ao buscar atendentes:', error);
+      logError('Erro ao buscar atendentes', error);
       setErro(error instanceof Error ? error.message : 'Erro desconhecido');
     } finally {
       setCarregando(false);

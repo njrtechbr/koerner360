@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { TipoUsuario } from '@prisma/client';
+import { logError } from '@/lib/error-utils';
 
 interface ChangelogItem {
   id: string;
@@ -138,7 +139,7 @@ export default function AdminChangelogPage() {
       const data = await response.json();
       setChangelogs(data.changelogs || []);
     } catch (error) {
-      console.error('Erro ao carregar changelogs:', error);
+      logError('Erro ao carregar changelogs', error);
       toast.error('Erro ao carregar changelogs');
     } finally {
       setLoading(false);
@@ -170,7 +171,7 @@ export default function AdminChangelogPage() {
       resetForm();
       carregarChangelogs();
     } catch (error: unknown) {
-      console.error('Erro ao salvar changelog:', error);
+      logError('Erro ao salvar changelog', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro ao salvar changelog';
       toast.error(errorMessage);
     }
@@ -209,7 +210,7 @@ export default function AdminChangelogPage() {
       toast.success('Changelog deletado com sucesso!');
       carregarChangelogs();
     } catch (error: unknown) {
-      console.error('Erro ao deletar changelog:', error);
+      logError('Erro ao deletar changelog', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro ao deletar changelog';
       toast.error(errorMessage);
     }

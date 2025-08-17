@@ -6,8 +6,9 @@ import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { UserPlus, Loader2 } from 'lucide-react';
 import { Atendente, StatusAtendente } from '@/types/atendente';
 import { ModalCriarUsuario } from './ModalCriarUsuario';
-import { ModalCredenciais } from './ModalCredenciais';
+import { ModalBoasVindas } from '../usuarios/modal-boas-vindas';
 import { useSonnerToast } from '@/hooks/use-sonner-toast';
+import { getErrorMessage, logError } from '@/lib/error-utils';
 
 interface BotaoCriarUsuarioProps {
   atendente: Atendente;
@@ -16,6 +17,7 @@ interface BotaoCriarUsuarioProps {
 }
 
 interface CredenciaisUsuario {
+  nomeUsuario: string;
   email: string;
   senhaTemporaria: string;
 }
@@ -26,7 +28,7 @@ interface CredenciaisUsuario {
  */
 function BotaoCriarUsuarioComponent({ atendente, onUsuarioCriado, renderAsMenuItem = false }: BotaoCriarUsuarioProps) {
   const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false);
-  const [modalCredenciaisAberto, setModalCredenciaisAberto] = useState(false);
+  const [modalBoasVindasAberto, setModalBoasVindasAberto] = useState(false);
   const [credenciais, setCredenciais] = useState<CredenciaisUsuario | null>(null);
   const [carregando, setCarregando] = useState(false);
   const { showSuccess, showError } = useSonnerToast();
@@ -91,9 +93,13 @@ function BotaoCriarUsuarioComponent({ atendente, onUsuarioCriado, renderAsMenuIt
         // Fechar modal de confirmação
         setModalConfirmacaoAberto(false);
         
-        // Definir credenciais e abrir modal de sucesso
-        setCredenciais(data.data.credenciais);
-        setModalCredenciaisAberto(true);
+        // Definir credenciais e abrir modal de boas-vindas
+        setCredenciais({
+          nomeUsuario: data.data.usuario?.nome || atendente.nome,
+          email: data.data.credenciais.email,
+          senhaTemporaria: data.data.credenciais.senhaTemporaria
+        });
+        setModalBoasVindasAberto(true);
         
         // Notificar sucesso
         showSuccess('Usuário criado com sucesso!');
@@ -104,18 +110,16 @@ function BotaoCriarUsuarioComponent({ atendente, onUsuarioCriado, renderAsMenuIt
         throw new Error('Resposta inválida do servidor');
       }
     } catch (error) {
-      console.error('Erro ao criar usuário:', error);
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : 'Erro inesperado ao criar usuário';
+      logError('Erro ao criar usuário', error);
+      const errorMessage = getErrorMessage(error, 'Erro inesperado ao criar usuário');
       showError(errorMessage);
     } finally {
       setCarregando(false);
     }
-  }, [validacoes.podecriarUsuario, atendente.id, showSuccess, showError, onUsuarioCriado]);
+  }, [validacoes.podecriarUsuario, atendente.id, atendente.nome, showSuccess, showError, onUsuarioCriado]);
 
-  const handleFecharCredenciais = useCallback(() => {
-    setModalCredenciaisAberto(false);
+  const handleFecharBoasVindas = useCallback(() => {
+    setModalBoasVindasAberto(false);
     setCredenciais(null);
   }, []);
 
@@ -168,13 +172,14 @@ function BotaoCriarUsuarioComponent({ atendente, onUsuarioCriado, renderAsMenuIt
           carregando={carregando}
         />
 
-        {/* Modal de credenciais */}
+        {/* Modal de boas-vindas */}
         {credenciais && (
-          <ModalCredenciais
-            aberto={modalCredenciaisAberto}
-            onFechar={handleFecharCredenciais}
-            credenciais={credenciais}
-            nomeAtendente={atendente.nome}
+          <ModalBoasVindas
+            isOpen={modalBoasVindasAberto}
+            onClose={handleFecharBoasVindas}
+            nomeUsuario={credenciais.nomeUsuario}
+            email={credenciais.email}
+            senhaTemporaria={credenciais.senhaTemporaria}
           />
         )}
       </>
@@ -208,13 +213,14 @@ function BotaoCriarUsuarioComponent({ atendente, onUsuarioCriado, renderAsMenuIt
         carregando={carregando}
       />
 
-      {/* Modal de credenciais */}
+      {/* Modal de boas-vindas */}
       {credenciais && (
-        <ModalCredenciais
-          aberto={modalCredenciaisAberto}
-          onFechar={handleFecharCredenciais}
-          credenciais={credenciais}
-          nomeAtendente={atendente.nome}
+        <ModalBoasVindas
+          isOpen={modalBoasVindasAberto}
+          onClose={handleFecharBoasVindas}
+          nomeUsuario={credenciais.nomeUsuario}
+          email={credenciais.email}
+          senhaTemporaria={credenciais.senhaTemporaria}
         />
       )}
     </>

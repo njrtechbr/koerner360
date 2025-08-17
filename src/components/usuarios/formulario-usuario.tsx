@@ -16,6 +16,8 @@ import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { useSonnerToast } from '@/hooks/use-sonner-toast';
+import { getErrorMessage, logError } from '@/lib/error-utils';
+import { ModalBoasVindas } from '@/components/usuarios/modal-boas-vindas';
 
 // Schema removido - validação feita no backend
 
@@ -54,6 +56,12 @@ function FormularioUsuarioComponent({ usuario, onSalvar, onCancelar }: Formulari
   const [supervisores, setSupervisores] = useState<Supervisor[]>([]);
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [carregandoSupervisores, setCarregandoSupervisores] = useState(false);
+  const [modalBoasVindas, setModalBoasVindas] = useState(false);
+  const [dadosUsuarioCriado, setDadosUsuarioCriado] = useState<{
+    nome: string;
+    email: string;
+    senhaTemporaria: string;
+  } | null>(null);
   const { showSuccess, showError } = useSonnerToast();
 
   const isEdicao = !!usuario;
@@ -86,9 +94,10 @@ function FormularioUsuarioComponent({ usuario, onSalvar, onCancelar }: Formulari
       const data = await response.json();
 
       if (response.ok) {
-        setSupervisores(data.data.usuarios);
-        if (data.data.usuarios.length > 0) {
-          showSuccess(`${data.data.usuarios.length} supervisor(es) disponível(is)`);
+        const supervisores = data.data.usuarios || [];
+        setSupervisores(supervisores);
+        if (supervisores.length > 0) {
+          showSuccess(`${supervisores.length} supervisor(es) disponível(is)`);
         } else {
           showSuccess('Nenhum supervisor encontrado');
         }
@@ -96,7 +105,7 @@ function FormularioUsuarioComponent({ usuario, onSalvar, onCancelar }: Formulari
         showError('Erro ao carregar supervisores');
       }
     } catch (error) {
-      console.error('Erro ao carregar supervisores:', error);
+      logError('Erro ao carregar supervisores', error);
     } finally {
       setCarregandoSupervisores(false);
     }
@@ -169,24 +178,32 @@ function FormularioUsuarioComponent({ usuario, onSalvar, onCancelar }: Formulari
         throw new Error(errorMessage);
       }
 
-      // Mostrar notificação de sucesso
-      const successMessage = isEdicao 
-        ? 'Usuário atualizado com sucesso!' 
-        : 'Usuário criado com sucesso!';
-      showSuccess(successMessage);
-
-      onSalvar();
+      if (isEdicao) {
+        // Para edição, apenas mostrar notificação e fechar
+        showSuccess('Usuário atualizado com sucesso!');
+        onSalvar();
+      } else {
+        // Para criação, preparar dados para o modal de boas-vindas
+        setDadosUsuarioCriado({
+          nome: data.nome,
+          email: data.email,
+          senhaTemporaria: data.senha || 'senha_temporaria_123', // Fallback caso não tenha senha
+        });
+        setModalBoasVindas(true);
+        showSuccess('Usuário criado com sucesso!');
+      }
     } catch (error) {
-      console.error('Erro ao salvar usuário:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      setErro(errorMessage);
-      // Notificação de erro já foi mostrada acima
-    } finally {
+        logError('Erro ao salvar usuário', error);
+        const errorMessage = getErrorMessage(error, 'Erro inesperado');
+        setErro(errorMessage);
+        showError(`Erro ao salvar usuário: ${errorMessage}`);
+      } finally {
       setCarregando(false);
     }
   };
 
   return (
+    <>
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {erro && (
         <Alert variant="destructive">
@@ -337,6 +354,22 @@ function FormularioUsuarioComponent({ usuario, onSalvar, onCancelar }: Formulari
         </Button>
       </div>
     </form>
+    
+    {/* Modal de Boas-vindas */}
+    {modalBoasVindas && dadosUsuarioCriado && (
+      <ModalBoasVindas
+        isOpen={modalBoasVindas}
+        onClose={() => {
+          setModalBoasVindas(false);
+          setDadosUsuarioCriado(null);
+          onSalvar(); // Fechar o formulário após o modal
+        }}
+        nomeUsuario={dadosUsuarioCriado.nome}
+        email={dadosUsuarioCriado.email}
+        senhaTemporaria={dadosUsuarioCriado.senhaTemporaria}
+      />
+    )}
+    </>
   );
 }
 

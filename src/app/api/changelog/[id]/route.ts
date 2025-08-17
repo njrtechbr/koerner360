@@ -1,14 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import {
   createSuccessResponse,
   createErrorResponse,
-  ErrorCodes,
-  withErrorHandling,
-  validateAuthentication
+  ErrorCodes
 } from '@/lib/api-response';
+import { logError } from '@/lib/error-utils';
 
 // Schema de validação para atualizar changelog
 const atualizarChangelogSchema = z.object({
@@ -30,12 +28,13 @@ interface RouteParams {
 
 // GET - Buscar changelog específico
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: RouteParams
 ) {
   try {
+    const { id } = await params;
     const changelog = await prisma.changelog.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         autor: {
           select: {
@@ -61,7 +60,7 @@ export async function GET(
     
     return createSuccessResponse(changelog, 'Changelog encontrado com sucesso');
   } catch (error) {
-    console.error('Erro ao buscar changelog:', error);
+    logError('Erro ao buscar changelog', error);
     return createErrorResponse(
       ErrorCodes.INTERNAL_ERROR,
       'Erro interno do servidor'
@@ -75,6 +74,7 @@ export async function PUT(
   { params }: RouteParams
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     
     const authResult = validateAuthentication(session);
@@ -95,7 +95,7 @@ export async function PUT(
     
     // Verificar se o changelog existe
     const changelogExistente = await prisma.changelog.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
     
     if (!changelogExistente) {
@@ -120,7 +120,7 @@ export async function PUT(
     }
     
     const changelog = await prisma.changelog.update({
-      where: { id: params.id },
+      where: { id },
       data: dadosValidados,
       include: {
         autor: {
@@ -148,7 +148,7 @@ export async function PUT(
       );
     }
     
-    console.error('Erro ao atualizar changelog:', error);
+    logError('Erro ao atualizar changelog', error);
     return createErrorResponse(
       ErrorCodes.INTERNAL_ERROR,
       'Erro interno do servidor'
@@ -162,6 +162,7 @@ export async function DELETE(
   { params }: RouteParams
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     
     const authResult = validateAuthentication(session);
@@ -179,7 +180,7 @@ export async function DELETE(
     
     // Verificar se o changelog existe
     const changelogExistente = await prisma.changelog.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
     
     if (!changelogExistente) {
@@ -190,15 +191,15 @@ export async function DELETE(
     }
     
     await prisma.changelog.delete({
-      where: { id: params.id }
+      where: { id }
     });
     
     return createSuccessResponse(
-      { id: params.id },
+      { id },
       'Changelog deletado com sucesso'
     );
   } catch (error) {
-    console.error('Erro ao deletar changelog:', error);
+    logError('Erro ao deletar changelog', error);
     return createErrorResponse(
       ErrorCodes.INTERNAL_ERROR,
       'Erro interno do servidor'

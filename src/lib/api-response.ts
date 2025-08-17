@@ -4,6 +4,7 @@
 
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
+import { logError } from '@/lib/error-utils';
 
 // Tipos para respostas padronizadas
 export interface ApiResponse<T = unknown> {
@@ -150,7 +151,7 @@ export function handleGenericError(
   error: unknown,
   context: string = 'Operação'
 ): NextResponse {
-  console.error(`Erro em ${context}:`, error);
+  logError(`Erro em ${context}`, error);
 
   // Se for erro de validação do Zod
   if (error instanceof ZodError) {

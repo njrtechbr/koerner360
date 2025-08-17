@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { logError } from '@/lib/error-utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -48,10 +49,10 @@ export function FiltrosUsuariosComponent({ filtros, onFiltrosChange, onLimparFil
       const data = await response.json();
 
       if (response.ok) {
-        setSupervisores(data.data.usuarios);
+        setSupervisores(data.data.usuarios || []);
       }
     } catch (error) {
-      console.error('Erro ao carregar supervisores:', error);
+      logError('Erro ao carregar supervisores', error);
     } finally {
       setCarregandoSupervisores(false);
     }
@@ -258,7 +259,7 @@ export function FiltrosUsuariosComponent({ filtros, onFiltrosChange, onLimparFil
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos os supervisores</SelectItem>
-                    {supervisores.map((supervisor) => (
+                    {(supervisores || []).map((supervisor) => (
                       <SelectItem key={supervisor.id} value={supervisor.id}>
                         {supervisor.nome}
                       </SelectItem>

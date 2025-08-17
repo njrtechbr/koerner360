@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { logError } from '@/lib/error-utils';
 
 export interface ChangelogEntry {
   version: string;
@@ -139,7 +140,7 @@ export function parseChangelog(): ChangelogEntry[] {
     
     return entries.filter(entry => entry.version !== 'Não Lançado');
   } catch (error) {
-    console.error('Erro ao ler CHANGELOG.md:', error);
+    logError('Erro ao ler CHANGELOG.md', error);
     return [];
   }
 }

@@ -1,6 +1,10 @@
-import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { createSuccessResponse, createErrorResponse, ErrorCodes } from '@/lib/api-response';
+import {
+  createSuccessResponse,
+  createErrorResponse,
+  ErrorCodes
+} from '@/lib/api-response';
+import { logError } from '@/lib/error-utils';
 
 /**
  * GET /api/changelog/stats
@@ -60,7 +64,7 @@ export async function GET() {
 
     return createSuccessResponse(estatisticas);
   } catch (error) {
-    console.error('Erro ao buscar estatísticas do changelog:', error);
+    logError('Erro ao buscar estatísticas do changelog', error);
     return createErrorResponse(
       ErrorCodes.INTERNAL_ERROR,
       'Erro interno do servidor'

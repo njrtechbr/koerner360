@@ -45,6 +45,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { UploadFoto } from '@/components/ui/upload-foto';
 import { useSonnerToast } from '@/hooks/use-sonner-toast';
+import { getErrorMessage, logError } from '@/lib/error-utils';
 import { 
   Save, 
   ArrowLeft, 
@@ -147,10 +148,9 @@ function FormularioAtendenteComponent({
         router.push('/atendentes');
       }
     } catch (error) {
-      console.error('Erro ao salvar atendente:', error);
-      showError(
-        `Erro ao salvar atendente: ${error instanceof Error ? error.message : 'Erro inesperado ao processar a solicitação'}`
-      );
+      logError('Erro ao salvar atendente', error);
+      const errorMessage = getErrorMessage(error, 'Erro inesperado ao processar a solicitação');
+      showError(`Erro ao salvar atendente: ${errorMessage}`);
     } finally {
       setCarregando(false);
     }

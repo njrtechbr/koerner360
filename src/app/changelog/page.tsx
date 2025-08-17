@@ -44,6 +44,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { buildInfo } from '@/lib/build-info';
+import { logError } from '@/lib/error-utils';
 
 interface ChangelogItem {
   id: string;
@@ -187,8 +188,9 @@ export default function ChangelogPage() {
       }
       
       const data = await response.json();
-      setChangelogs(data.data?.changelogs || []);
-      setPaginacao(data.data?.paginacao || { 
+      const changelogs = data.data || [];
+      setChangelogs(changelogs);
+      setPaginacao(data.paginacao || { 
         paginaAtual: 1, 
         itensPorPagina: 10, 
         totalItens: 0, 
@@ -198,11 +200,11 @@ export default function ChangelogPage() {
       });
       
       // Expandir a primeira versão por padrão
-      if (data.data?.changelogs && data.data.changelogs.length > 0) {
-        setExpandedVersions(new Set([data.data.changelogs[0].id]));
+      if (changelogs && changelogs.length > 0) {
+        setExpandedVersions(new Set([changelogs[0].id]));
       }
     } catch (error) {
-      console.error('Erro ao carregar changelog:', error);
+      logError('Erro ao carregar changelog', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -217,7 +219,7 @@ export default function ChangelogPage() {
         setEstatisticas(data.data);
       }
     } catch (error) {
-      console.error('Erro ao carregar estatísticas:', error);
+      logError('Erro ao carregar estatísticas', error);
     }
   };
 
@@ -251,7 +253,7 @@ export default function ChangelogPage() {
   };
 
   const expandAll = () => {
-    setExpandedVersions(new Set(changelogs.map(c => c.id)));
+    setExpandedVersions(new Set((changelogs || []).map(c => c.id)));
   };
 
   const collapseAll = () => {
@@ -539,11 +541,11 @@ export default function ChangelogPage() {
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="font-medium flex items-center gap-2">
                     <History className="h-4 w-4" />
-                    Detalhes das mudanças ({changelog.itens.length})
+                    Detalhes das mudanças ({(changelog.itens || []).length})
                   </h4>
                 </div>
                 <div className="space-y-3">
-                  {changelog.itens
+                  {(changelog.itens || [])
                     .sort((a, b) => a.ordem - b.ordem)
                     .map(renderChangelogItem)}
                 </div>
@@ -685,7 +687,7 @@ export default function ChangelogPage() {
                   </CardContent>
                 </Card>
               ) : (
-                changelogs.map(renderChangelogCard)
+                (changelogs || []).map(renderChangelogCard)
               )}
             </div>
             

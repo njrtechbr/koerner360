@@ -24,6 +24,7 @@ import {
   User
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { logError } from '@/lib/error-utils';
 
 interface ModalCredenciaisProps {
   aberto: boolean;
@@ -63,7 +64,7 @@ export function ModalCredenciais({
         toast.success('Senha copiada para a área de transferência');
       }
     } catch (error) {
-      console.error('Erro ao copiar:', error);
+      logError('Erro ao copiar', error);
       toast.error('Erro ao copiar para a área de transferência');
     }
   };
@@ -75,7 +76,7 @@ export function ModalCredenciais({
       await navigator.clipboard.writeText(textoCompleto);
       toast.success('Credenciais completas copiadas para a área de transferência');
     } catch (error) {
-      console.error('Erro ao copiar credenciais completas:', error);
+      logError('Erro ao copiar credenciais completas', error);
       toast.error('Erro ao copiar credenciais');
     }
   };

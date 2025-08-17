@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useSonnerToast } from '@/hooks/use-sonner-toast';
+import { getErrorMessage, logError } from '@/lib/error-utils';
 import { 
   Atendente, 
   AtendenteFormData, 
@@ -159,14 +160,11 @@ export function useAtendenteForm({
         router.push('/atendentes');
       }
     } catch (error) {
-      const mensagemErro = error instanceof Error ? error.message : 'Erro inesperado';
+      logError('Erro ao salvar atendente', error);
+      const mensagemErro = getErrorMessage(error, 'Erro inesperado');
       
-      console.error('Erro ao salvar atendente:', error);
       setErro(mensagemErro);
-      
-      showError(
-        `Erro ao salvar atendente: ${mensagemErro}`
-      );
+      showError(`Erro ao salvar atendente: ${mensagemErro}`);
 
       if (onErro) {
         onErro(mensagemErro);

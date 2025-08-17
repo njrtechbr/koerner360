@@ -1,11 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import {
   createSuccessResponse,
   createErrorResponse,
-  handleGenericError,
   validateAuthentication,
   validatePermissions,
   ErrorCodes,
@@ -37,12 +36,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const authError = validateAuthentication(session?.user);
     if (authError) return authError;
 
-    const { id } = params;
+    const { id } = await params;
 
     // Verificar permissões - admin, supervisor ou próprio usuário
     if (session!.user.userType !== 'ADMIN' && 
         session!.user.userType !== 'SUPERVISOR' && 
-        session!.user.id !== params.id) {
+        session!.user.id !== id) {
       return createErrorResponse(
         ErrorCodes.FORBIDDEN,
         'Sem permissão para acessar este usuário'

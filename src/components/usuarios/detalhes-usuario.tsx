@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, User, Mail, Shield, Calendar, UserCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { logError } from '@/lib/error-utils';
 
 interface Usuario {
   id: string;
@@ -54,7 +55,7 @@ function DetalhesUsuarioComponent({ usuarioId, onEditar, onFechar }: DetalhesUsu
 
       setUsuario(data.data.usuario);
     } catch (error) {
-      console.error('Erro ao carregar usuário:', error);
+      logError('Erro ao carregar usuário', error);
       setErro(error instanceof Error ? error.message : 'Erro desconhecido');
     } finally {
       setCarregando(false);

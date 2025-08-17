@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { gerarSenhaTemporaria, validarCriacaoUsuario } from '@/lib/senha-utils';
@@ -11,6 +11,7 @@ import {
   validatePermissions,
   ErrorCodes
 } from '@/lib/api-response';
+import { logError } from '@/lib/error-utils';
 
 /**
  * POST /api/atendentes/[id]/criar-usuario - Cria usuário para atendente
@@ -35,7 +36,7 @@ export async function POST(
       return permissionResult;
     }
 
-    const atendenteId = params.id;
+    const atendenteId = (await params).id;
 
     // Validar se o atendente pode ter um usuário criado
     const validacao = await validarCriacaoUsuario(atendenteId);
@@ -119,7 +120,7 @@ export async function POST(
 
     return createSuccessResponse(resultado, 'Usuário criado com sucesso', 201);
   } catch (error) {
-    console.error('Erro ao criar usuário para atendente:', error);
+    logError('Erro ao criar usuário para atendente', error);
     return createErrorResponse(
       ErrorCodes.INTERNAL_ERROR,
       'Erro interno do servidor',

@@ -1,5 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { NextRequest } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
@@ -7,9 +6,9 @@ import { z } from 'zod';
 import {
   createSuccessResponse,
   createErrorResponse,
-  ErrorCodes,
-  validateAuthentication
+  ErrorCodes
 } from '@/lib/api-response';
+import { logError } from '@/lib/error-utils';
 
 // Schema de validação para upload
 const uploadSchema = z.object({
@@ -108,7 +107,7 @@ export async function POST(request: NextRequest) {
     );
 
   } catch (error) {
-    console.error('Erro no upload:', error);
+    logError('Erro no upload', error);
     return createErrorResponse(
       ErrorCodes.INTERNAL_ERROR,
       'Erro interno do servidor'
@@ -155,7 +154,7 @@ export async function DELETE(request: NextRequest) {
     );
 
   } catch (error) {
-    console.error('Erro ao remover arquivo:', error);
+    logError('Erro ao remover arquivo', error);
     return createErrorResponse(
       ErrorCodes.INTERNAL_ERROR,
       'Erro interno do servidor'

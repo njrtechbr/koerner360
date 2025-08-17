@@ -22,15 +22,15 @@ export interface BuildInfo {
 }
 
 export const buildInfo: BuildInfo = {
-  "version": "0.2.6-dev.2025-08-16T21-27-14",
+  "version": "0.2.6-dev.2025-08-17T16-48-19",
   "branch": "master",
-  "commit": "e3219a4eb258342da38384d0183c2dfafcbcdc6a",
-  "commitShort": "e3219a4",
-  "commitMessage": "0.2.6",
+  "commit": "9678395227e50e2f14c87bea509f7ad94b9299ca",
+  "commitShort": "9678395",
+  "commitMessage": "chore: atualiza informações de build para versão 0.2.6",
   "hasUncommittedChanges": true,
-  "lastCommitDate": "2025-08-16 18:26:23 -0300",
-  "buildDate": "2025-08-16T21:27:14.603Z",
-  "buildTimestamp": 1755379634603,
+  "lastCommitDate": "2025-08-16 18:27:32 -0300",
+  "buildDate": "2025-08-17T16:48:19.717Z",
+  "buildTimestamp": 1755449299717,
   "environment": "development",
   "nodeVersion": "v22.18.0",
   "platform": "win32",

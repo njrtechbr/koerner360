@@ -5,7 +5,7 @@
  * DELETE /api/atendentes/[id] - Remove atendente (soft delete)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { 
@@ -22,6 +22,7 @@ import {
   validatePermissions,
   ErrorCodes
 } from '@/lib/api-response';
+import { logError } from '@/lib/error-utils';
 
 
 interface RouteParams {
@@ -106,7 +107,7 @@ export async function GET(
     return createSuccessResponse({ atendente: atendenteFormatado });
 
   } catch (error) {
-    console.error('Erro ao buscar atendente:', error);
+    logError('Erro ao buscar atendente', error);
     return createErrorResponse(
       ErrorCodes.INTERNAL_ERROR,
       'Erro interno do servidor',
@@ -255,7 +256,7 @@ export async function PUT(
     return createSuccessResponse({ atendente: atendenteFormatado });
 
   } catch (error) {
-    console.error('Erro ao atualizar atendente:', error);
+    logError('Erro ao atualizar atendente', error);
     
     if (error instanceof Error && error.name === 'ZodError') {
       return createErrorResponse(
@@ -355,7 +356,7 @@ export async function DELETE(
     });
 
   } catch (error) {
-    console.error('Erro ao remover atendente:', error);
+    logError('Erro ao remover atendente', error);
     return createErrorResponse(
       ErrorCodes.INTERNAL_ERROR,
       'Erro interno do servidor',

@@ -2,6 +2,7 @@ import NextAuth from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
+import { logError } from "@/lib/error-utils"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -62,7 +63,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             supervisorId: user.supervisorId || null
           };
         } catch (error) {
-          console.error("Erro na autenticação:", error)
+          logError("Erro na autenticação", error)
           return null
         }
       }
@@ -82,7 +83,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
         return token
       } catch (error) {
-        console.error('Erro no callback JWT:', error)
+        logError('Erro no callback JWT', error)
         // Retorna o token mesmo em caso de erro para manter a sessão
         return token
       }
@@ -96,7 +97,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
         return session
       } catch (error) {
-        console.error('Erro no callback de sessão:', error)
+        logError('Erro no callback de sessão', error)
         // Retorna sessão vazia para forçar nova autenticação
         return {
           ...session,
@@ -117,7 +118,5 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   jwt: {
     maxAge: 24 * 60 * 60, // 24 horas
   },
-  secret: process.env.AUTH_SECRET,
-  trustHost: true,
-  debug: process.env.NODE_ENV === 'development'
+  secret: process.env.AUTH_SECRET
 })
