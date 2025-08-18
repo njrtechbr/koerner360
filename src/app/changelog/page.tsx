@@ -170,11 +170,12 @@ export default function ChangelogPage() {
 
   const carregarChangelogs = useCallback(async (pagina = 1) => {
     try {
-      setRefreshing(true);
+      setLoading(pagina === 1);
+      setRefreshing(pagina > 1);
+      
       const params = new URLSearchParams({
-        publicado: 'true',
         pagina: pagina.toString(),
-        limite: '10'
+        limite: paginacao.itensPorPagina.toString()
       });
       
       if (searchTerm) params.append('busca', searchTerm);
@@ -209,9 +210,9 @@ export default function ChangelogPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [searchTerm, selectedType, selectedPriority]);
+  }, [searchTerm, selectedType, selectedPriority, paginacao.itensPorPagina]);
 
-  const carregarEstatisticas = async () => {
+  const carregarEstatisticas = useCallback(async () => {
     try {
       const response = await fetch('/api/changelog/stats');
       if (response.ok) {
@@ -221,21 +222,13 @@ export default function ChangelogPage() {
     } catch (error) {
       logError('Erro ao carregar estatísticas', error);
     }
-  };
+  }, []);
 
   useEffect(() => {
     carregarChangelogs();
     carregarEstatisticas();
     setBuildInfoData(buildInfo);
-  }, [carregarChangelogs]);
-
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      carregarChangelogs(1);
-    }, 300);
-    
-    return () => clearTimeout(timeoutId);
-  }, [carregarChangelogs]);
+  }, [carregarChangelogs, carregarEstatisticas]);
 
   const handleRefresh = () => {
     carregarChangelogs(paginacao.paginaAtual);

@@ -224,7 +224,7 @@ export function AtendentesWrapper({ searchParams }: AtendentesWrapperProps) {
     } finally {
       setCarregando(false);
     }
-  }, [filtros, ordenacao, paginacao.paginaAtual, paginacao.itensPorPagina, showInfo]);
+  }, [filtros, ordenacao, paginacao, showInfo]);
 
 
 
@@ -305,7 +305,7 @@ export function AtendentesWrapper({ searchParams }: AtendentesWrapperProps) {
   // Efeito inicial para carregar dados
   useEffect(() => {
     buscarAtendentes();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [buscarAtendentes]);
 
   // Evitar execução na página de login ou outras rotas públicas
   if (pathname === '/login' || pathname === '/changelog') {

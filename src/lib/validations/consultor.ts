@@ -77,7 +77,7 @@ export const comparativoResponseSchema = z.object({
       cargo: z.string().optional(),
       portaria: z.string().optional(),
       avatarUrl: z.string().optional(),
-      metricas: z.record(z.union([z.number(), z.string()])),
+      metricas: z.record(z.string(), z.union([z.number(), z.string()])),
       posicaoRanking: z.number().optional(),
     })),
     periodo: z.object({
@@ -86,15 +86,15 @@ export const comparativoResponseSchema = z.object({
       nome: z.string(),
     }),
     comparacao: z.object({
-      melhor: z.record(z.object({
+      melhor: z.record(z.string(), z.object({
         atendenteId: z.string(),
         valor: z.union([z.number(), z.string()]),
       })),
-      pior: z.record(z.object({
+      pior: z.record(z.string(), z.object({
         atendenteId: z.string(),
         valor: z.union([z.number(), z.string()]),
       })),
-      media: z.record(z.union([z.number(), z.string()])),
+      media: z.record(z.string(), z.union([z.number(), z.string()])),
     }),
   }),
   timestamp: z.string(),
@@ -183,8 +183,8 @@ export const conquistasResponseSchema = z.object({
     })),
     estatisticas: z.object({
       totalConquistas: z.number(),
-      conquistasPorTipo: z.record(z.number()),
-      conquistasPorCategoria: z.record(z.number()),
+      conquistasPorTipo: z.record(z.string(), z.number()),
+      conquistasPorCategoria: z.record(z.string(), z.number()),
       pontosTotais: z.number(),
     }),
     periodo: z.object({
@@ -199,11 +199,14 @@ export const conquistasResponseSchema = z.object({
 // ===== VALIDAÇÕES PARA MÉTRICAS =====
 
 export const metricasParamsSchema = z.object({
+  atendenteId: z.string().optional(),
   atendenteIds: z.array(z.string()).optional(),
   periodo: z.string().optional().default('mensal'),
   tipoMetrica: z.enum(['individual', 'comparativa', 'setor']).default('individual'),
   cargo: z.string().optional(),
   portaria: z.string().optional(),
+  dataInicio: z.string().optional(),
+  dataFim: z.string().optional(),
   incluirHistorico: z.boolean().default(false),
 })
 

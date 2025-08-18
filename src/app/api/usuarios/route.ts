@@ -46,16 +46,16 @@ export async function GET(request: NextRequest) {
     if (session?.user?.userType === TipoUsuario.SUPERVISOR) {
       whereClause = {
         OR: [
-          { supervisorId: session.user.id },
-          { id: session.user.id }
+          { supervisorId: session!.user.id },
+          { id: session!.user.id }
         ]
       };
     }
 
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const search = searchParams.get('search') || '';
+    const page = parseInt(searchParams.get('pagina') || searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limite') || searchParams.get('limit') || '10');
+    const search = searchParams.get('search') || searchParams.get('busca') || '';
     const tipoUsuario = searchParams.get('tipoUsuario') || '';
     const ativo = searchParams.get('ativo');
     
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
     const totalPages = Math.ceil(total / limit);
 
     return createPaginatedResponse(
-      { usuarios },
+      usuarios,
       {
         paginaAtual: page,
         itensPorPagina: limit,

@@ -16,7 +16,7 @@ export default async function TestAuthPage() {
         </p>
         {session?.user && (
           <p className="text-sm text-gray-600">
-            Usuário: {session.user.nome} ({session.user.email})
+            Usuário: {session.user.name} ({session.user.email})
           </p>
         )}
       </div>

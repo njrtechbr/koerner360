@@ -1,133 +1,156 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
-import { prisma } from '@/lib/prisma'
-import { conquistasParamsSchema } from '@/lib/validations/consultor'
-import { hasPermission } from '@/hooks/use-permissions'
-import type { TipoUsuario } from '@/hooks/use-permissions'
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
+import { prisma } from '@/lib/prisma';
+import { conquistasParamsSchema } from '@/lib/validations/consultor';
+import { hasPermission } from '@/lib/permissions';
+import {
+  TipoUsuario,
+  CategoriaConquista,
+  TipoConquista,
+} from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user) {
+    const session = await auth();
+    if (!session?.user || !session?.user?.userType) {
       return NextResponse.json(
-        { success: false, error: 'Não autorizado', timestamp: new Date().toISOString() },
-        { status: 401 }
-      )
+        {
+          success: false,
+          error: 'Não autorizado',
+          timestamp: new Date().toISOString(),
+        },
+        { status: 401 },
+      );
     }
 
     // Verificar permissões
-    const userType = session.user.userType as TipoUsuario
+    const userType = session!.user.userType as TipoUsuario;
     if (!hasPermission(userType, 'podeVisualizarConquistas')) {
       return NextResponse.json(
-        { success: false, error: 'Sem permissão para visualizar conquistas', timestamp: new Date().toISOString() },
-        { status: 403 }
-      )
+        {
+          success: false,
+          error: 'Sem permissão para visualizar conquistas',
+          timestamp: new Date().toISOString(),
+        },
+        { status: 403 },
+      );
     }
 
     // Validar parâmetros da query
-    const { searchParams } = new URL(request.url)
-    const validatedParams = conquistasParamsSchema.parse({
-      atendenteId: searchParams.get('atendenteId'),
-      categoria: searchParams.get('categoria'),
-      tipo: searchParams.get('tipo'),
-      ativo: searchParams.get('ativo') === 'true' ? true : searchParams.get('ativo') === 'false' ? false : undefined,
-      limite: searchParams.get('limite') ? parseInt(searchParams.get('limite')!) : undefined,
-    })
+    const { searchParams } = new URL(request.url);
+    const validatedParams = conquistasParamsSchema.safeParse({
+      atendenteId: searchParams.get('atendenteId') || undefined,
+      categoria: searchParams.get('categoria') || undefined,
+      tipo: searchParams.get('tipo') || undefined,
+      limite: searchParams.get('limite')
+        ? parseInt(searchParams.get('limite')!, 10)
+        : undefined,
+      periodo: searchParams.get('periodo') || undefined,
+    });
+
+    if (!validatedParams.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Parâmetros inválidos',
+          details: validatedParams.error.flatten(),
+          timestamp: new Date().toISOString(),
+        },
+        { status: 400 },
+      );
+    }
+
+    const { data: params } = validatedParams;
 
     // Construir filtros
-    const whereConquistas: Record<string, unknown> = {
-      ativo: validatedParams.ativo ?? true,
+    const whereConquistas: Prisma.ConquistaWhereInput = {};
+
+    if (params.categoria) {
+      whereConquistas.categoria = params.categoria;
     }
 
-    if (validatedParams.categoria) {
-      whereConquistas.categoria = validatedParams.categoria
-    }
-
-    if (validatedParams.tipo) {
-      whereConquistas.tipo = validatedParams.tipo
+    if (params.tipo) {
+      whereConquistas.tipo = params.tipo;
     }
 
     // Se atendenteId for fornecido, buscar conquistas específicas do atendente
-    if (validatedParams.atendenteId) {
+    if (params.atendenteId) {
       const conquistasAtendente = await prisma.conquistaAtendente.findMany({
         where: {
-          atendenteId: validatedParams.atendenteId,
+          atendenteId: params.atendenteId,
+          conquista: whereConquistas,
         },
         include: {
-          conquista: {
-            where: whereConquistas,
-          },
+          conquista: true,
           atendente: {
             select: {
               id: true,
               nome: true,
               cargo: true,
               portaria: true,
-              usuario: {
-                select: {
-                  avatarUrl: true,
-                },
-              },
+              avatarUrl: true,
             },
           },
         },
         orderBy: {
-          dataConquista: 'desc',
+          obtidaEm: 'desc',
         },
-        take: validatedParams.limite,
-      })
+        take: params.limite,
+      });
 
-      const conquistasFormatadas = conquistasAtendente
-        .filter(ca => ca.conquista) // Filtrar conquistas que passaram no where
-        .map(ca => ({
-          id: ca.conquista.id,
-          nome: ca.conquista.nome,
-          descricao: ca.conquista.descricao,
-          icone: ca.conquista.icone,
-          categoria: ca.conquista.categoria,
-          tipo: ca.conquista.tipo,
-          criterio: ca.conquista.criterio,
-          valorMeta: ca.conquista.valorMeta,
-          pontos: ca.conquista.pontos,
-          ativo: ca.conquista.ativo,
-          dataConquista: ca.dataConquista.toISOString(),
-          atendente: {
-            id: ca.atendente.id,
-            nome: ca.atendente.nome,
-            cargo: ca.atendente.cargo,
-            portaria: ca.atendente.portaria,
-            avatarUrl: ca.atendente.usuario?.avatarUrl,
-          },
-        }))
+      const conquistasFormatadas = conquistasAtendente.map(ca => ({
+        id: ca.conquista.id,
+        nome: ca.conquista.nome,
+        descricao: ca.conquista.descricao,
+        icone: ca.conquista.icone,
+        categoria: ca.conquista.categoria,
+        tipo: ca.conquista.tipo,
+        pontos: ca.conquista.pontos,
+        obtidaEm: ca.obtidaEm.toISOString(),
+        atendente: {
+          id: ca.atendente.id,
+          nome: ca.atendente.nome,
+          cargo: ca.atendente.cargo ?? undefined,
+          portaria: ca.atendente.portaria ?? undefined,
+          avatarUrl: ca.atendente.avatarUrl ?? undefined,
+        },
+      }));
+
+      const total = await prisma.conquistaAtendente.count({
+        where: {
+          atendenteId: params.atendenteId,
+          conquista: whereConquistas,
+        },
+      });
 
       return NextResponse.json({
         success: true,
         data: {
           conquistas: conquistasFormatadas,
-          total: conquistasFormatadas.length,
-          atendenteId: validatedParams.atendenteId,
+          total,
+          atendenteId: params.atendenteId,
         },
         timestamp: new Date().toISOString(),
-      })
+      });
     }
 
     // Buscar todas as conquistas disponíveis
-    const conquistas = await prisma.conquista.findMany({
-      where: whereConquistas,
-      include: {
-        _count: {
-          select: {
-            conquistaAtendentes: true,
+    const [conquistas, totalConquistas] = await Promise.all([
+      prisma.conquista.findMany({
+        where: whereConquistas,
+        include: {
+          _count: {
+            select: {
+              atendentes: true,
+            },
           },
         },
-      },
-      orderBy: [
-        { categoria: 'asc' },
-        { tipo: 'asc' },
-        { valorMeta: 'asc' },
-      ],
-      take: validatedParams.limite,
-    })
+        orderBy: [{ categoria: 'asc' }, { tipo: 'asc' }, { pontos: 'asc' }],
+        take: params.limite,
+      }),
+      prisma.conquista.count({ where: whereConquistas }),
+    ]);
 
     const conquistasFormatadas = conquistas.map(conquista => ({
       id: conquista.id,
@@ -136,63 +159,65 @@ export async function GET(request: NextRequest) {
       icone: conquista.icone,
       categoria: conquista.categoria,
       tipo: conquista.tipo,
-      criterio: conquista.criterio,
-      valorMeta: conquista.valorMeta,
       pontos: conquista.pontos,
-      ativo: conquista.ativo,
-      totalConquistadores: conquista._count.conquistaAtendentes,
+      totalConquistadores: conquista._count.atendentes,
       criadoEm: conquista.criadoEm.toISOString(),
       atualizadoEm: conquista.atualizadoEm.toISOString(),
-    }))
+    }));
 
     // Estatísticas gerais
-    const estatisticas = {
-      totalConquistas: conquistas.length,
-      porCategoria: {} as Record<string, number>,
-      porTipo: {} as Record<string, number>,
-    }
+    const [estatisticasPorCategoria, estatisticasPorTipo] = await Promise.all([
+      prisma.conquista.groupBy({
+        by: ['categoria'],
+        _count: { id: true },
+        where: whereConquistas,
+      }),
+      prisma.conquista.groupBy({
+        by: ['tipo'],
+        _count: { id: true },
+        where: whereConquistas,
+      }),
+    ]);
 
-    conquistas.forEach(conquista => {
-      // Contar por categoria
-      if (!estatisticas.porCategoria[conquista.categoria]) {
-        estatisticas.porCategoria[conquista.categoria] = 0
-      }
-      estatisticas.porCategoria[conquista.categoria]++
+    const porCategoria = estatisticasPorCategoria.reduce(
+      (acc, item) => {
+        acc[item.categoria] = item._count.id;
+        return acc;
+      },
+      {} as Record<CategoriaConquista, number>,
+    );
 
-      // Contar por tipo
-      if (!estatisticas.porTipo[conquista.tipo]) {
-        estatisticas.porTipo[conquista.tipo] = 0
-      }
-      estatisticas.porTipo[conquista.tipo]++
-    })
+    const porTipo = estatisticasPorTipo.reduce(
+      (acc, item) => {
+        acc[item.tipo] = item._count.id;
+        return acc;
+      },
+      {} as Record<TipoConquista, number>,
+    );
 
     return NextResponse.json({
       success: true,
       data: {
         conquistas: conquistasFormatadas,
-        estatisticas,
+        estatisticas: {
+          totalConquistas,
+          conquistasPorCategoria: porCategoria,
+          conquistasPorTipo: porTipo,
+          pontosTotais: 0, // TODO: Implementar cálculo de pontos totais
+        },
       },
       timestamp: new Date().toISOString(),
-    })
-
+    });
   } catch (error) {
-    console.error('Erro ao buscar conquistas:', error)
-    
-    if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Parâmetros inválidos', 
-          details: error.message,
-          timestamp: new Date().toISOString() 
-        },
-        { status: 400 }
-      )
-    }
+    console.error('Erro ao buscar conquistas:', error);
 
     return NextResponse.json(
-      { success: false, error: 'Erro interno do servidor', timestamp: new Date().toISOString() },
-      { status: 500 }
-    )
+      {
+        success: false,
+        error: 'Erro interno do servidor',
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 },
+    );
   }
 }

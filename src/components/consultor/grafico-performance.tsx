@@ -53,21 +53,25 @@ interface ComparativoData {
   pontuacaoMedia: number
 }
 
+type Periodo = 'semanal' | 'mensal' | 'trimestral' | 'anual'
+
 interface GraficoPerformanceProps {
-  periodo?: 'semanal' | 'mensal' | 'trimestral' | 'anual'
+  periodo?: Periodo
 }
 
 type TipoGrafico = 'linha' | 'area' | 'barra' | 'combinado'
 type MetricaFoco = 'avaliacoes' | 'mediaNotas' | 'satisfacao' | 'pontuacao'
 
-export function GraficoPerformance({ periodo = 'mensal' }: GraficoPerformanceProps) {
+export function GraficoPerformance({
+  periodo = 'mensal',
+}: GraficoPerformanceProps) {
   const [dadosPerformance, setDadosPerformance] = useState<DadosPerformance[]>([])
   const [dadosComparativo, setDadosComparativo] = useState<ComparativoData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [tipoGrafico, setTipoGrafico] = useState<TipoGrafico>('linha')
   const [metricaFoco, setMetricaFoco] = useState<MetricaFoco>('mediaNotas')
-  const [periodoSelecionado, setPeriodoSelecionado] = useState(periodo)
+  const [periodoSelecionado, setPeriodoSelecionado] = useState<Periodo>(periodo)
 
   useEffect(() => {
     const buscarDadosPerformance = async () => {
@@ -278,7 +282,10 @@ export function GraficoPerformance({ periodo = 'mensal' }: GraficoPerformancePro
             Evolução de Performance - {getMetricaLabel(metricaFoco)}
           </CardTitle>
           <div className="flex items-center gap-2">
-            <Select value={periodoSelecionado} onValueChange={(value: string) => setPeriodoSelecionado(value)}>
+            <Select
+              value={periodoSelecionado}
+              onValueChange={(value) => setPeriodoSelecionado(value as Periodo)}
+            >
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>

@@ -35,6 +35,9 @@ export interface Permissoes {
   podeVisualizarRankings: boolean
   podeVisualizarConquistas: boolean
   podeVisualizarComparativos: boolean
+
+  // Métricas
+  podeVisualizarMetricas: boolean
   
   // Dashboard
   podeAcessarDashboardAdmin: boolean
@@ -77,6 +80,9 @@ const PERMISSOES_POR_TIPO: Record<TipoUsuario, Permissoes> = {
     podeVisualizarRankings: true,
     podeVisualizarConquistas: true,
     podeVisualizarComparativos: true,
+
+    // Métricas
+    podeVisualizarMetricas: true,
     
     // Dashboard
     podeAcessarDashboardAdmin: true,
@@ -119,6 +125,9 @@ const PERMISSOES_POR_TIPO: Record<TipoUsuario, Permissoes> = {
     podeVisualizarConquistas: true,
     podeVisualizarComparativos: true,
     
+    // Métricas
+    podeVisualizarMetricas: true,
+    
     // Dashboard
     podeAcessarDashboardAdmin: false,
     podeAcessarDashboardSupervisor: true,
@@ -159,6 +168,9 @@ const PERMISSOES_POR_TIPO: Record<TipoUsuario, Permissoes> = {
     podeVisualizarRankings: true,
     podeVisualizarConquistas: true,
     podeVisualizarComparativos: false,
+
+    // Métricas
+    podeVisualizarMetricas: false,
     
     // Dashboard
     podeAcessarDashboardAdmin: false,
@@ -200,6 +212,9 @@ const PERMISSOES_POR_TIPO: Record<TipoUsuario, Permissoes> = {
     podeVisualizarRankings: true,
     podeVisualizarConquistas: true,
     podeVisualizarComparativos: false,
+    
+    // Métricas
+    podeVisualizarMetricas: true,
     
     // Dashboard
     podeAcessarDashboardAdmin: false,
@@ -278,6 +293,6 @@ export function getPermissions(userType: TipoUsuario | undefined): Permissoes | 
  * @param userType Tipo do usuário
  * @returns boolean
  */
-export function canManageUsers(userType: TipoUsuario | undefined): boolean {
+export function canManageUsers(userType: TipoUsuario | string | undefined): boolean {
   return userType === 'ADMIN' || userType === 'SUPERVISOR'
 }

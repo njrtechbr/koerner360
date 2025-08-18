@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Check, X, AlertCircle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -34,6 +34,9 @@ export function ValidacaoCampo({
   const [validando, setValidando] = useState(false);
   const [mostrar, setMostrar] = useState(mostrarSempre);
 
+  // Memoizar o validador para evitar re-renders desnecessários
+  const validadorMemoizado = useCallback(validador, [validador]);
+
   useEffect(() => {
     if (!valor && !mostrarSempre) {
       setValidacao(null);
@@ -45,13 +48,13 @@ export function ValidacaoCampo({
     setMostrar(true);
 
     const timer = setTimeout(() => {
-      const resultado = validador(valor);
+      const resultado = validadorMemoizado(valor);
       setValidacao(resultado);
       setValidando(false);
     }, debounceMs);
 
     return () => clearTimeout(timer);
-  }, [valor, validador, debounceMs, mostrarSempre]);
+  }, [valor, validadorMemoizado, debounceMs, mostrarSempre]);
 
   if (!mostrar && !validacao) {
     return null;

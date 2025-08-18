@@ -59,7 +59,9 @@
     "db:check-changelog": "tsx scripts/check-changelog.ts",
     "changelog:update-from-git": "tsx scripts/update-changelog-from-git.ts",
     "db:check-tables": "tsx scripts/check-all-tables.ts",
-    "db:list-tables": "tsx scripts/list-postgres-tables.ts"
+    "db:list-tables": "tsx scripts/list-postgres-tables.ts",
+    "browser:connector": "node scripts/browser-connector-server.js",
+    "mcp:test": "npm run browser:connector"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
@@ -98,6 +100,7 @@
     "react-hook-form": "^7.62.0",
     "recharts": "^3.1.2",
     "sonner": "^2.0.7",
+    "swr": "^2.3.6",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^4.0.17"

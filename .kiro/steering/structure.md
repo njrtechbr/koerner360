@@ -1,101 +1,149 @@
-# Project Structure & Organization
+---
+inclusion: always
+---
 
-## Root Directory Structure
+# Estrutura do Projeto & Padrões de Desenvolvimento
 
+## Organização de Diretórios
+
+### Estrutura Raiz
 ```
 koerner360/
-├── src/                    # Main application source code
-├── prisma/                 # Database schema and migrations
-├── scripts/                # Utility and maintenance scripts
-├── docs/                   # Project documentation
-├── __tests__/              # Test files organized by type
-├── components/             # Legacy components (being migrated to src/)
-├── public/                 # Static assets
-├── .kiro/                  # Kiro AI assistant configuration
-├── .github/                # GitHub workflows and templates
-└── .husky/                 # Git hooks configuration
+├── src/                    # Código fonte principal (Next.js App Router)
+├── prisma/                 # Schema do banco, migrations, seed
+├── scripts/                # Scripts utilitários (DB, build, changelog)
+├── docs/                   # Documentação do projeto
+├── __tests__/              # Arquivos de teste por domínio
+├── components/             # Componentes legados (migrando para src/)
+├── public/                 # Assets estáticos
+└── .kiro/                  # Configuração do assistente IA
 ```
 
-## Source Code Organization (`src/`)
-
+### Código Fonte (`src/`)
 ```
 src/
-├── app/                    # Next.js App Router pages and layouts
-│   ├── api/               # API route handlers
-│   ├── dashboard/         # Main dashboard pages
-│   ├── login/            # Authentication pages
-│   └── layout.tsx        # Root layout component
-├── components/           # Reusable React components
-│   ├── layout/          # Layout-specific components
-│   ├── providers/       # Context providers (Session, Theme)
-│   └── ui/             # shadcn/ui components
-├── lib/                # Utility libraries and configurations
-│   ├── auth.ts         # NextAuth configuration
-│   ├── prisma.ts       # Prisma client setup
-│   └── utils.ts        # General utilities
-├── hooks/              # Custom React hooks
-└── types/              # TypeScript type definitions
+├── app/                    # Next.js App Router
+│   ├── api/               # Rotas da API (/api/*)
+│   ├── dashboard/         # Páginas protegidas do dashboard
+│   ├── login/            # Páginas de autenticação
+│   └── layout.tsx        # Layout raiz
+├── components/           # Componentes reutilizáveis
+│   ├── layout/          # Navegação, cabeçalhos, rodapés
+│   ├── providers/       # Provedores de contexto
+│   └── ui/             # Componentes shadcn/ui
+├── lib/                # Utilitários principais
+│   ├── auth.ts         # Configuração NextAuth
+│   ├── prisma.ts       # Cliente do banco
+│   └── utils.ts        # Helpers
+├── hooks/              # Hooks customizados do React
+└── types/              # Definições TypeScript
 ```
 
-## Database Structure (`prisma/`)
+## Aliases de Caminho & Imports
 
-- **schema.prisma**: Complete database schema with all models
-- **migrations/**: Database migration files
-- **seed.ts**: Database seeding script
-
-## Scripts Directory
-
-Organized by functionality:
-- **Database**: Migration, seeding, and verification scripts
-- **Build**: Version management and build information
-- **Changelog**: Automated changelog generation and management
-- **Testing**: Database connection and API testing utilities
-
-## Testing Structure (`__tests__/`)
-
-```
-__tests__/
-├── api/                   # API route tests
-├── components/            # Component unit tests
-└── lib/                   # Utility function tests
-```
-
-## Path Aliases
-
-The project uses TypeScript path mapping for clean imports:
-
-- `@/*` → `./src/*` or `./*` (root level files)
+Sempre use estes aliases para imports limpos:
+- `@/*` → `./src/*` ou `./*` (arquivos raiz)
 - `@/components/*` → `./src/components/*`
 - `@/lib/*` → `./src/lib/*`
 - `@/app/*` → `./src/app/*`
 - `@/types/*` → `./src/types/*`
-- `@/hooks/*` → `./src/hooks/*`
 
-## File Naming Conventions
+## Convenções de Nomenclatura de Arquivos
 
-- **Components**: PascalCase (e.g., `UserProfile.tsx`)
-- **Pages**: kebab-case for directories, lowercase for files
-- **API Routes**: kebab-case (e.g., `user-management/route.ts`)
-- **Utilities**: camelCase (e.g., `formatDate.ts`)
-- **Types**: PascalCase with `.d.ts` extension for declarations
+- **Componentes**: PascalCase (`UserProfile.tsx`)
+- **Páginas**: diretórios kebab-case, arquivos minúsculos
+- **Rotas da API**: kebab-case (`user-management/route.ts`)
+- **Utilitários**: camelCase (`formatDate.ts`)
+- **Tipos**: PascalCase com `.d.ts` para declarações
 
-## Component Organization
+## Arquitetura de Componentes
 
-- **UI Components**: Located in `src/components/ui/` (shadcn/ui)
-- **Layout Components**: Located in `src/components/layout/`
-- **Feature Components**: Organized by domain in `src/components/`
-- **Page Components**: Co-located with pages in `src/app/`
+### Regras de Localização
+- **Componentes UI**: `src/components/ui/` (apenas shadcn/ui)
+- **Componentes de Layout**: `src/components/layout/`
+- **Componentes de Funcionalidade**: `src/components/` (organizados por domínio)
+- **Componentes de Página**: Co-localizados em `src/app/`
 
-## Configuration Files
+### Padrões de Componentes
+- Use interfaces TypeScript para props
+- Exporte componentes como padrão
+- Mantenha componentes focados e com responsabilidade única
+- Use composição ao invés de herança
 
-- **TypeScript**: `tsconfig.json` with strict settings
-- **ESLint**: `.eslintrc.json` with comprehensive rules
-- **Prettier**: `.prettierrc` for consistent formatting
-- **Tailwind**: `tailwind.config.js` with custom design system
-- **Next.js**: `next.config.ts` with optimizations
+## Estrutura de Rotas da API
 
-## Environment & Deployment
+```
+src/app/api/
+├── auth/                  # Endpoints de autenticação
+├── users/                 # Gerenciamento de usuários
+├── evaluations/           # Sistema de feedback 360°
+├── gamification/          # Pontos, conquistas
+└── admin/                 # Endpoints exclusivos para admin
+```
 
-- **Environment Variables**: `.env.local` for development
-- **Docker**: `docker-compose.yml` for containerized deployment
-- **Build Info**: Automated build information generation
+### Convenções da API
+- Use rotas da API do Next.js 15 App Router
+- Implemente métodos HTTP apropriados (GET, POST, PUT, DELETE)
+- Retorne respostas JSON consistentes
+- Use Zod para validação de requisições
+- Inclua tratamento adequado de erros
+
+## Padrões de Banco de Dados
+
+### Uso do Prisma
+- Sempre use o cliente Prisma compartilhado de `@/lib/prisma`
+- Use transações para operações multi-tabela
+- Implemente tratamento adequado de erros para operações do BD
+- Siga o padrão de audit logging para mudanças de dados
+
+### Estratégia de Migration
+- Use migrations do Prisma para mudanças de schema
+- Mantenha arquivos de migration descritivos
+- Teste migrations em dados de desenvolvimento primeiro
+- Documente mudanças críticas no CHANGELOG.md
+
+## Organização de Testes
+
+```
+__tests__/
+├── api/                   # Testes de rotas da API
+├── components/            # Testes unitários de componentes
+└── lib/                   # Testes de funções utilitárias
+```
+
+### Padrões de Teste
+- Use Jest com React Testing Library
+- Teste interações do usuário, não detalhes de implementação
+- Mocke dependências externas (BD, APIs)
+- Siga o padrão AAA (Arrange, Act, Assert)
+
+## Gerenciamento de Configuração
+
+### Variáveis de Ambiente
+- Use `.env.local` para desenvolvimento
+- Documente variáveis necessárias em `.env.example`
+- Nunca commite valores sensíveis
+- Use validação de env type-safe
+
+### Configuração de Build
+- Modo strict do TypeScript habilitado
+- ESLint com regras abrangentes
+- Prettier para formatação consistente
+- Tailwind com sistema de design customizado
+
+## Fluxo de Desenvolvimento
+
+### Organização de Código
+1. Crie branch de feature a partir da main
+2. Implemente mudanças seguindo padrões de estrutura
+3. Adicione testes para nova funcionalidade
+4. Atualize documentação se necessário
+5. Execute linting e verificação de tipos
+6. Submeta PR com descrição clara
+
+### Uso de Scripts
+- `npm run dev` - Servidor de desenvolvimento
+- `npm run build` - Build de produção
+- `npm run db:push` - Atualizar schema do banco
+- `npm run test` - Executar suite de testes
+- `npm run lint:fix` - Corrigir problemas de linting

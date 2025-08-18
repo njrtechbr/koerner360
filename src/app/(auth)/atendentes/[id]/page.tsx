@@ -20,12 +20,12 @@ import { formatarCPF, formatarTelefone } from '@/lib/validations/atendente';
 import { logError } from '@/lib/error-utils';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
-  searchParams: {
+  }>;
+  searchParams: Promise<{
     tab?: string;
-  };
+  }>;
 }
 
 /**
@@ -79,7 +79,8 @@ async function buscarAtendente(id: string) {
  * Gerar metadata dinâmica
  */
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const atendente = await buscarAtendente(params.id);
+  const resolvedParams = await params;
+  const atendente = await buscarAtendente(resolvedParams.id);
   
   if (!atendente) {
     return {
@@ -97,6 +98,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
  * Página de detalhes do atendente
  */
 export default async function AtendentePage({ params, searchParams }: PageProps) {
+  // Aguardar parâmetros
+  const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
+  
   // Verificar autenticação
   const session = await auth();
   
@@ -110,13 +115,13 @@ export default async function AtendentePage({ params, searchParams }: PageProps)
   }
 
   // Buscar dados do atendente
-  const atendente = await buscarAtendente(params.id);
+  const atendente = await buscarAtendente(resolvedParams.id);
   
   if (!atendente) {
     notFound();
   }
 
-  const tabAtiva = searchParams.tab || 'detalhes';
+  const tabAtiva = resolvedSearchParams.tab || 'detalhes';
 
   return (
     <div className="flex-1 space-y-6 p-6">
@@ -140,19 +145,19 @@ export default async function AtendentePage({ params, searchParams }: PageProps)
       <Tabs value={tabAtiva} className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="detalhes" asChild>
-            <Link href={`/atendentes/${params.id}?tab=detalhes`} prefetch={false} className="flex items-center gap-2">
+            <Link href={`/atendentes/${resolvedParams.id}?tab=detalhes`} prefetch={false} className="flex items-center gap-2">
               <User className="h-4 w-4" />
               Detalhes
             </Link>
           </TabsTrigger>
           <TabsTrigger value="editar" asChild>
-            <Link href={`/atendentes/${params.id}?tab=editar`} prefetch={false} className="flex items-center gap-2">
+            <Link href={`/atendentes/${resolvedParams.id}?tab=editar`} prefetch={false} className="flex items-center gap-2">
               <Edit className="h-4 w-4" />
               Editar
             </Link>
           </TabsTrigger>
           <TabsTrigger value="historico" asChild>
-            <Link href={`/atendentes/${params.id}?tab=historico`} prefetch={false} className="flex items-center gap-2">
+            <Link href={`/atendentes/${resolvedParams.id}?tab=historico`} prefetch={false} className="flex items-center gap-2">
               <History className="h-4 w-4" />
               Histórico
             </Link>

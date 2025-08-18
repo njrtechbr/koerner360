@@ -16,7 +16,7 @@ function validarCPF(cpf: string | null | undefined): boolean {
     soma += parseInt(cpfLimpo.charAt(i)) * (10 - i);
   }
   let resto = 11 - (soma % 11);
-  let digitoVerificador1 = resto < 2 ? 0 : resto;
+  const digitoVerificador1 = resto < 2 ? 0 : resto;
   
   if (parseInt(cpfLimpo.charAt(9)) !== digitoVerificador1) return false;
   
@@ -25,7 +25,7 @@ function validarCPF(cpf: string | null | undefined): boolean {
     soma += parseInt(cpfLimpo.charAt(i)) * (11 - i);
   }
   resto = 11 - (soma % 11);
-  let digitoVerificador2 = resto < 2 ? 0 : resto;
+  const digitoVerificador2 = resto < 2 ? 0 : resto;
   
   return parseInt(cpfLimpo.charAt(10)) === digitoVerificador2;
 }

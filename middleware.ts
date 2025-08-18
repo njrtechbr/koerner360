@@ -13,7 +13,7 @@ function canAccessRoute(userType: TipoUsuario | undefined, route: string): boole
 
   // Rotas autenticadas dentro do grupo (auth) - verificar permissões específicas
   if (route.startsWith('/usuarios')) {
-    return userType === 'ADMIN'
+    return userType === 'ADMIN' || userType === 'SUPERVISOR'
   }
 
   if (route.startsWith('/atendentes') || route.startsWith('/avaliacoes') || route.startsWith('/feedbacks')) {
@@ -41,8 +41,10 @@ export default auth((req) => {
 
 
 
+
+
   // Rotas públicas que não precisam de autenticação
-  const publicRoutes = ['/login', '/changelog']
+  const publicRoutes = ['/login', '/changelog', '/test-auth-simple']
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
 
   // Se não está logado e não é uma rota pública, redirecionar para login

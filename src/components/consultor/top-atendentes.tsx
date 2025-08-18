@@ -48,6 +48,23 @@ interface TopAtendente {
   destaque: 'mvp' | 'destaque' | 'promessa' | null
 }
 
+// Tipo para os dados brutos da API, sem os campos calculados no frontend
+interface AtendenteFromApi {
+  id: string
+  nome: string
+  cargo: string
+  portaria: string
+  pontuacaoTotal: number
+  mediaNotas: number
+  totalAvaliacoes: number
+  percentualSatisfacao: number
+  nivel: number
+  experiencia: number
+  posicao: number
+  sequenciaAtual: number
+  melhorSequencia: number
+}
+
 interface TopAtendentesProps {
   periodo?: 'semanal' | 'mensal' | 'trimestral' | 'anual'
   limite?: number
@@ -102,43 +119,46 @@ export function TopAtendentes({
           throw new Error(result.error || 'Erro desconhecido')
         }
 
-        const atendentesData = result.data.atendentes || []
-        
+        const atendentesData: AtendenteFromApi[] = result.data.atendentes || []
+
         // Adicionar destaques e tendências
-        const atendentesComDestaques = atendentesData.map((atendente: Record<string, unknown>, index: number) => {
-          let destaque = null
-          
-          if (index === 0 && atendente.pontuacaoTotal > 1000) {
-            destaque = 'mvp'
-          } else if (index < 3 && atendente.mediaNotas >= 4.5) {
-            destaque = 'destaque'
-          } else if (atendente.nivel <= 3 && atendente.mediaNotas >= 4.0) {
-            destaque = 'promessa'
-          }
-          
-          // Simular tendência baseada na posição e métricas
-          let tendencia: 'crescente' | 'decrescente' | 'estavel' = 'estavel'
-          if (atendente.sequenciaAtual > 5) tendencia = 'crescente'
-          else if (atendente.mediaNotas < 3.5) tendencia = 'decrescente'
-          
-          return {
-            ...atendente,
-            destaque,
-            tendencia,
-            conquistasDesbloqueadas: Math.floor(Math.random() * 20) + 5, // Simular conquistas
-            experienciaProximoNivel: 1000 - (atendente.experiencia % 1000),
-          }
-        })
+        const atendentesComDestaques: TopAtendente[] = atendentesData.map(
+          (atendente, index) => {
+            let destaque: TopAtendente['destaque'] = null
+
+            if (index === 0 && atendente.pontuacaoTotal > 1000) {
+              destaque = 'mvp'
+            } else if (index < 3 && atendente.mediaNotas >= 4.5) {
+              destaque = 'destaque'
+            } else if (atendente.nivel <= 3 && atendente.mediaNotas >= 4.0) {
+              destaque = 'promessa'
+            }
+
+            // Simular tendência baseada na posição e métricas
+            let tendencia: TopAtendente['tendencia'] = 'estavel'
+            if (atendente.sequenciaAtual > 5) tendencia = 'crescente'
+            else if (atendente.mediaNotas < 3.5) tendencia = 'decrescente'
+
+            return {
+              ...atendente,
+              destaque,
+              tendencia,
+              conquistasDesbloqueadas: Math.floor(Math.random() * 20) + 5, // Simular conquistas
+              experienciaProximoNivel: 1000 - (atendente.experiencia % 1000),
+            }
+          },
+        )
 
         setAtendentes(atendentesComDestaques)
-        
+
         // Extrair filtros únicos
-        const cargosUnicos = [...new Set(atendentesData.map((a: Record<string, unknown>) => a.cargo))]
-        const portariasUnicas = [...new Set(atendentesData.map((a: Record<string, unknown>) => a.portaria))]
-        
+        const cargosUnicos = [...new Set(atendentesData.map((a) => a.cargo))]
+        const portariasUnicas = [
+          ...new Set(atendentesData.map((a) => a.portaria)),
+        ]
+
         setFiltrosCargos(cargosUnicos)
         setFiltrosPortarias(portariasUnicas)
-        
       } catch (err) {
         console.error('Erro ao buscar top atendentes:', err)
         setError(err instanceof Error ? err.message : 'Erro desconhecido')
@@ -274,7 +294,7 @@ export function TopAtendentes({
             <span className="text-sm font-medium">Filtros:</span>
           </div>
           
-          <Select value={periodoSelecionado} onValueChange={setPeriodoSelecionado}>
+          <Select value={periodoSelecionado} onValueChange={(value) => setPeriodoSelecionado(value as typeof periodoSelecionado)}>
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
@@ -376,8 +396,8 @@ export function TopAtendentes({
                 {/* Progresso do Nível */}
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs text-muted-foreground">XP:</span>
-                  <Progress 
-                    value={getProgressoNivel(atendente.experiencia, atendente.experienciaProximoNivel)} 
+                  <Progress
+                    value={getProgressoNivel(atendente.experiencia)}
                     className="flex-1 h-2"
                   />
                   <span className="text-xs text-muted-foreground">

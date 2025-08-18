@@ -2,65 +2,65 @@
 inclusion: always
 ---
 
-# Product Context & Development Guidelines
+# Contexto do Produto & Diretrizes de Desenvolvimento
 
-## Koerner 360 Overview
+## Visão Geral do Koerner 360
 
-Koerner 360 is a 360-degree feedback and performance evaluation system with role-based access control, gamification, and comprehensive audit logging.
+Koerner 360 é um sistema de feedback 360 graus e avaliação de desempenho com controle de acesso baseado em funções, gamificação e registro de auditoria abrangente.
 
-## User Roles & Permissions Hierarchy
+## Hierarquia de Funções de Usuário & Permissões
 
-When implementing features, always respect this permission hierarchy:
+Ao implementar recursos, sempre respeite esta hierarquia de permissões:
 
-1. **Admin** (highest): Full system access, user management, configuration
-2. **Supervisor**: Manages attendants, reviews evaluations, team oversight
-3. **Attendant**: Receives evaluations, views personal metrics, gamification participation
-4. **Consultant** (limited): External users with evaluation-specific access
+1. **Admin** (mais alto): Acesso completo ao sistema, gerenciamento de usuários, configuração
+2. **Supervisor**: Gerencia atendentes, revisa avaliações, supervisão de equipe
+3. **Atendente**: Recebe avaliações, visualiza métricas pessoais, participação na gamificação
+4. **Consultor** (limitado): Usuários externos com acesso específico a avaliações
 
-## Core Domain Models
+## Modelos de Domínio Principais
 
-- **Users**: Multi-role system with hierarchical relationships
-- **Evaluations**: 360° feedback with ratings, comments, anonymous options
-- **Gamification**: Points, achievements, rankings, performance metrics
-- **Audit Logs**: Track all system actions for compliance
+- **Usuários**: Sistema multi-função com relacionamentos hierárquicos
+- **Avaliações**: Feedback 360° com classificações, comentários, opções anônimas
+- **Gamificação**: Pontos, conquistas, rankings, métricas de desempenho
+- **Logs de Auditoria**: Rastrear todas as ações do sistema para conformidade
 
-## Development Conventions
+## Convenções de Desenvolvimento
 
-### Authentication & Authorization
-- Always check user roles before granting access to features
-- Use NextAuth.js session management consistently
-- Implement proper middleware for route protection
-- Validate permissions on both client and server sides
+### Autenticação & Autorização
+- Sempre verificar funções de usuário antes de conceder acesso a recursos
+- Usar gerenciamento de sessão NextAuth.js consistentemente
+- Implementar middleware adequado para proteção de rotas
+- Validar permissões tanto no lado cliente quanto servidor
 
-### Data Access Patterns
-- Use Prisma ORM for all database operations
-- Implement proper error handling for database queries
-- Follow the established audit logging pattern for data changes
-- Respect user hierarchy when filtering data access
+### Padrões de Acesso a Dados
+- Usar Prisma ORM para todas as operações de banco de dados
+- Implementar tratamento adequado de erros para consultas de banco de dados
+- Seguir o padrão estabelecido de registro de auditoria para mudanças de dados
+- Respeitar hierarquia de usuário ao filtrar acesso a dados
 
-### UI/UX Guidelines
-- Maintain consistent role-based navigation
-- Use shadcn/ui components for consistency
-- Implement proper loading states and error boundaries
-- Follow accessibility standards for all user interactions
+### Diretrizes de UI/UX
+- Manter navegação consistente baseada em funções
+- Usar componentes shadcn/ui para consistência
+- Implementar estados de carregamento adequados e limites de erro
+- Seguir padrões de acessibilidade para todas as interações do usuário
 
-### API Design
-- Structure API routes by domain (users, evaluations, gamification)
-- Use proper HTTP status codes and error responses
-- Implement request validation with Zod schemas
-- Follow RESTful conventions where applicable
+### Design de API
+- Estruturar rotas de API por domínio (usuários, avaliações, gamificação)
+- Usar códigos de status HTTP adequados e respostas de erro
+- Implementar validação de requisição com esquemas Zod
+- Seguir convenções RESTful onde aplicável
 
-## Business Rules
+## Regras de Negócio
 
-- Supervisors can only manage their assigned attendants
-- Evaluations must maintain anonymity when specified
-- Gamification points should be calculated consistently
-- All significant actions must be audit logged
-- User role changes require admin privileges
+- Supervisores podem apenas gerenciar seus atendentes designados
+- Avaliações devem manter anonimato quando especificado
+- Pontos de gamificação devem ser calculados consistentemente
+- Todas as ações significativas devem ser registradas em auditoria
+- Mudanças de função de usuário requerem privilégios de admin
 
-## Migration Context
+## Contexto de Migração
 
-The system migrated from Supabase, so:
-- Maintain compatibility with existing data structures
-- Use migration scripts in `/scripts` for data transformations
-- Preserve audit trail continuity during updates
+O sistema migrou do Supabase, então:
+- Manter compatibilidade com estruturas de dados existentes
+- Usar scripts de migração em `/scripts` para transformações de dados
+- Preservar continuidade da trilha de auditoria durante atualizações

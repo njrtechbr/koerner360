@@ -35,6 +35,8 @@ export interface Permissoes {
   podeVisualizarRankings: boolean
   podeVisualizarConquistas: boolean
   podeVisualizarComparativos: boolean
+  // Métricas
+  podeVisualizarMetricas: boolean
   
   // Dashboard
   podeAcessarDashboardAdmin: boolean
@@ -78,6 +80,8 @@ const PERMISSOES_POR_TIPO: Record<TipoUsuario, Permissoes> = {
     podeVisualizarRankings: true,
     podeVisualizarConquistas: true,
     podeVisualizarComparativos: true,
+    // Métricas
+    podeVisualizarMetricas: true,
     
     // Dashboard - Acesso a todos
     podeAcessarDashboardAdmin: true,
@@ -120,6 +124,8 @@ const PERMISSOES_POR_TIPO: Record<TipoUsuario, Permissoes> = {
     podeVisualizarRankings: true,
     podeVisualizarConquistas: true,
     podeVisualizarComparativos: true,
+    // Métricas
+    podeVisualizarMetricas: true,
     
     // Dashboard
     podeAcessarDashboardAdmin: false,
@@ -162,6 +168,8 @@ const PERMISSOES_POR_TIPO: Record<TipoUsuario, Permissoes> = {
     podeVisualizarRankings: true,
     podeVisualizarConquistas: true,
     podeVisualizarComparativos: false,
+    // Métricas
+    podeVisualizarMetricas: false,
     
     // Dashboard
     podeAcessarDashboardAdmin: false,
@@ -204,6 +212,8 @@ const PERMISSOES_POR_TIPO: Record<TipoUsuario, Permissoes> = {
     podeVisualizarRankings: true,
     podeVisualizarConquistas: true,
     podeVisualizarComparativos: true,
+    // Métricas
+    podeVisualizarMetricas: true,
     
     // Dashboard
     podeAcessarDashboardAdmin: false,

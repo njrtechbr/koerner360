@@ -25,7 +25,7 @@ interface Usuario {
     nome: string;
   };
   _count?: {
-    atendentesSupervisionados?: number;
+    supervisoes?: number;
 
   };
 }
@@ -214,10 +214,10 @@ function DetalhesUsuarioComponent({ usuarioId, onEditar, onFechar }: DetalhesUsu
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {usuario.tipoUsuario === 'SUPERVISOR' && usuario._count.atendentesSupervisionados !== undefined && (
+              {usuario.tipoUsuario === 'SUPERVISOR' && usuario._count.supervisoes !== undefined && (
                 <div className="text-center p-4 bg-blue-50 rounded-lg">
                   <p className="text-2xl font-bold text-blue-600">
-                    {usuario._count.atendentesSupervisionados}
+                    {usuario._count.supervisoes}
                   </p>
                   <p className="text-sm text-blue-600">Atendentes Supervisionados</p>
                 </div>

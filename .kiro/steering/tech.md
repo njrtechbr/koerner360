@@ -1,74 +1,74 @@
-# Technology Stack & Build System
+# Stack Tecnológico & Sistema de Build
 
-## Core Technologies
+## Tecnologias Principais
 
-- **Framework**: Next.js 15.4.6 with App Router
-- **Language**: TypeScript 5+ with strict configuration
-- **Database**: PostgreSQL with Prisma ORM 6.14.0
-- **Authentication**: NextAuth.js v5 (beta) with JWT strategy
-- **Styling**: Tailwind CSS 3.4.17 with shadcn/ui components
-- **Forms**: React Hook Form with Zod validation
-- **Charts**: Recharts for data visualization
-- **Icons**: Lucide React
+- **Framework**: Next.js 15.4.6 com App Router
+- **Linguagem**: TypeScript 5+ com configuração strict
+- **Banco de Dados**: PostgreSQL com Prisma ORM 6.14.0
+- **Autenticação**: NextAuth.js v5 (beta) com estratégia JWT
+- **Estilização**: Tailwind CSS 3.4.17 com componentes shadcn/ui
+- **Formulários**: React Hook Form com validação Zod
+- **Gráficos**: Recharts para visualização de dados
+- **Ícones**: Lucide React
 - **Runtime**: Node.js 18+
 
-## Development Tools
+## Ferramentas de Desenvolvimento
 
-- **Linting**: ESLint with Next.js and TypeScript rules
-- **Formatting**: Prettier with consistent configuration
-- **Testing**: Jest with React Testing Library
-- **Package Manager**: npm with package-lock.json
-- **Git Hooks**: Husky for pre-commit and post-commit hooks
-- **Containerization**: Docker with docker-compose.yml
+- **Linting**: ESLint com regras Next.js e TypeScript
+- **Formatação**: Prettier com configuração consistente
+- **Testes**: Jest com React Testing Library
+- **Gerenciador de Pacotes**: npm com package-lock.json
+- **Git Hooks**: Husky para hooks pre-commit e post-commit
+- **Containerização**: Docker com docker-compose.yml
 
-## Common Commands
+## Comandos Comuns
 
-### Development
+### Desenvolvimento
 ```bash
-npm run dev              # Start development server
-npm run build           # Production build
-npm run start           # Start production server
-npm run type-check      # TypeScript type checking
-npm run lint            # Run ESLint
-npm run lint:fix        # Fix ESLint issues
-npm run format          # Format with Prettier
-npm run test            # Run Jest tests
-npm run test:watch      # Run tests in watch mode
+npm run dev              # Iniciar servidor de desenvolvimento
+npm run build           # Build de produção
+npm run start           # Iniciar servidor de produção
+npm run type-check      # Verificação de tipos TypeScript
+npm run lint            # Executar ESLint
+npm run lint:fix        # Corrigir problemas ESLint
+npm run format          # Formatar com Prettier
+npm run test            # Executar testes Jest
+npm run test:watch      # Executar testes em modo watch
 ```
 
-### Database Operations
+### Operações de Banco de Dados
 ```bash
-npm run db:generate     # Generate Prisma client
-npm run db:push         # Push schema changes
-npm run db:migrate      # Run migrations
-npm run db:reset        # Reset database
-npm run db:seed         # Seed database
-npm run db:studio       # Open Prisma Studio
+npm run db:generate     # Gerar cliente Prisma
+npm run db:push         # Aplicar mudanças de schema
+npm run db:migrate      # Executar migrations
+npm run db:reset        # Resetar banco de dados
+npm run db:seed         # Popular banco de dados
+npm run db:studio       # Abrir Prisma Studio
 ```
 
-### Versioning & Changelog
+### Versionamento & Changelog
 ```bash
-npm run version:patch   # Increment patch version
-npm run version:minor   # Increment minor version
-npm run version:major   # Increment major version
-npm run changelog:create # Create changelog from commits
-npm run release:patch   # Full patch release with tags
+npm run version:patch   # Incrementar versão patch
+npm run version:minor   # Incrementar versão minor
+npm run version:major   # Incrementar versão major
+npm run changelog:create # Criar changelog a partir de commits
+npm run release:patch   # Release patch completo com tags
 ```
 
-## Key Libraries & Patterns
+## Bibliotecas & Padrões Principais
 
-- **UI Components**: Radix UI primitives with shadcn/ui styling
-- **State Management**: React hooks and context (no external state library)
-- **Data Fetching**: Native fetch with Next.js API routes
-- **Password Hashing**: bcryptjs for secure authentication
-- **Date Handling**: date-fns for date manipulation
-- **Notifications**: Sonner for toast notifications
-- **Theme**: next-themes for dark/light mode support
+- **Componentes UI**: Primitivos Radix UI com estilização shadcn/ui
+- **Gerenciamento de Estado**: React hooks e context (sem biblioteca externa)
+- **Busca de Dados**: Fetch nativo com rotas API Next.js
+- **Hash de Senhas**: bcryptjs para autenticação segura
+- **Manipulação de Datas**: date-fns para manipulação de datas
+- **Notificações**: Sonner para notificações toast
+- **Tema**: next-themes para suporte a modo escuro/claro
 
-## Build Configuration
+## Configuração de Build
 
-- **TypeScript**: Strict mode enabled with path mapping (@/* aliases)
-- **Next.js**: App Router with server external packages configuration
-- **Tailwind**: Custom design system with CSS variables
-- **ESLint**: Comprehensive rules for TypeScript, React, and Next.js
-- **Prettier**: Consistent formatting with single quotes and semicolons
+- **TypeScript**: Modo strict habilitado com mapeamento de caminhos (aliases @/*)
+- **Next.js**: App Router com configuração de pacotes externos do servidor
+- **Tailwind**: Sistema de design customizado com variáveis CSS
+- **ESLint**: Regras abrangentes para TypeScript, React e Next.js
+- **Prettier**: Formatação consistente com aspas simples e ponto e vírgula

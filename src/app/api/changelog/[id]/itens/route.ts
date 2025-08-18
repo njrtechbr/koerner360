@@ -1,4 +1,7 @@
 import { NextRequest } from 'next/server';
+import { auth } from '@/auth';
+import { validateAuthentication, validatePermissions } from '@/lib/api-response';
+import { TipoUsuario } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { 

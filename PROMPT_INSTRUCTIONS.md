@@ -58,48 +58,93 @@ src/
 └── auth.ts               # Configuração principal Auth.js
 ```
 
-## Autenticação e Autorização (Auth.js v5)
-- **Perfis**: admin (total), supervisor (gerencia atendentes/avaliações), attendant (acesso às próprias avaliações)
-- **Rotas públicas**: /login, /changelog, /api/auth/*
-- **Middleware**: proteger todas as rotas exceto públicas
-```ts
-export const config = {
-  matcher: [
-    '/((?!api/auth|_next/static|_next/image|favicon.ico|changelog|login).*)',
-  ],
-};
+## MCPs Disponíveis e Uso Prioritário
+
+### 1. **Desktop Commander** (PRINCIPAL - Operações de Sistema)
+**Uso obrigatório para**: Manipulação de arquivos, diretórios e processos
+```bash
+# Comandos essenciais:
+- read_file: Ler arquivos (SEMPRE preferir sobre cat/type)
+- write_file: Escrever em chunks de 25-30 linhas (OBRIGATÓRIO)
+- list_directory: Listar conteúdo (preferir sobre ls/dir)
+- search_files: Buscar arquivos por nome
+- search_code: Buscar código usando ripgrep (MUITO EFICIENTE)
+- edit_block: Edições cirúrgicas precisas
+- create_directory: Criar diretórios
+- move_file: Mover/renomear arquivos
 ```
 
-## Padrões de Desenvolvimento
-### Nomenclatura
-- **Arquivos/Diretórios**: kebab-case (ex: user-profile.tsx, user-management/)
-- **Variáveis/Funções**: camelCase (ex: nomeUsuario, obterDadosUsuario)
-- **Classes/Interfaces/Types/Enums**: PascalCase (ex: UserProfile, Usuario, TipoUsuario)
-- **Constantes**: UPPER_SNAKE_CASE (ex: API_BASE_URL)
+**Padrão obrigatório para escrita**:
+```typescript
+// 1. PRIMEIRO chunk (rewrite)
+await write_file("arquivo.tsx", chunk1, {mode: 'rewrite'})
+// 2. DEMAIS chunks (append)
+await write_file("arquivo.tsx", chunk2, {mode: 'append'})
+await write_file("arquivo.tsx", chunk3, {mode: 'append'})
+```
+
+### 2. **Context7** (Documentação de Bibliotecas)
+**Uso**: Obter documentação atualizada e específica
+```bash
+# Fluxo obrigatório:
+1. resolve_library_id("next.js") → /vercel/next.js
+2. get_library_docs("/vercel/next.js", {topic: "app router", tokens: 5000})
+```
+
+### 3. **Sequential Thinking** (Problemas Complexos)
+**Uso**: Análise estruturada para debugging e arquitetura
+```bash
+# Quando usar OBRIGATORIAMENTE:
+- Problemas multi-etapas
+- Debugging complexo
+- Planejamento de features grandes
+- Análise de performance
+```
+
+### 4. **Prisma Local + PostgreSQL** (Banco de Dados)
+**Uso**: Operações diretas no banco, migrações, análise de performance
+
+### 5. **Gemini MCP** (IA Generativa)
+**Uso**: Integração com Google Gemini para tarefas de IA generativa
+```bash
+# Principais operações:
+- Geração de conteúdo e documentação
+- Análise e review de código
+- Tradução e localização
+- Sugestões de melhorias
+- Criação de testes automatizados
+```
+
+**Exemplo de uso**:
+```typescript
+// Gerar documentação JSDoc
+await gemini_generate({
+  prompt: "Documente este componente React",
+  context: componentCode
+})
+
+// Code review automatizado
+await gemini_analyze({
+  code: sourceCode,
+  task: "review",
+  focus: ["performance", "security"]
+})
+```
+
+## Padrões de Desenvolvimento Críticos
+
+### Nomenclatura (OBRIGATÓRIA)
+- **Arquivos/Diretórios**: kebab-case (user-profile.tsx)
+- **Variáveis/Funções**: camelCase (nomeUsuario)
+- **Classes/Interfaces/Types**: PascalCase (Usuario, TipoUsuario)
+- **Constantes**: UPPER_SNAKE_CASE (API_BASE_URL)
 - **Banco (Prisma)**: snake_case (tabelas e campos)
 
-### Server vs Client Components
-```ts
-// Server Component (padrão)
-export default function UsuariosPage() {
-  return <UsuariosList />;
-}
-
-// Client Component (quando necessário)
-'use client';
-import { useState } from 'react';
-export function UsuarioForm() {
-  const [loading, setLoading] = useState(false);
-  return <form>...</form>;
-}
-```
-
-### API Routes (Route Handlers)
+### API Routes (Padrão Obrigatório)
 ```ts
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { usuarioSchema } from '@/lib/validations/usuario';
 
 export async function GET(request: NextRequest) {
   try {
@@ -111,45 +156,26 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    const usuarios = await prisma.usuario.findMany({
+    const data = await prisma.usuario.findMany({
       select: { id: true, nome: true, email: true, tipo: true, ativo: true }
     });
     
     return NextResponse.json({
       success: true,
-      data: usuarios,
+      data,
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('Erro ao buscar usuários:', error);
+    console.error('Erro:', error);
     return NextResponse.json(
-      { success: false, error: 'Erro interno do servidor', timestamp: new Date().toISOString() },
+      { success: false, error: 'Erro interno', timestamp: new Date().toISOString() },
       { status: 500 }
     );
   }
 }
 ```
 
-### Resposta Padronizada
-```ts
-interface ApiResponse<T = unknown> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  details?: unknown;
-  timestamp: string;
-  paginacao?: {
-    paginaAtual: number;
-    totalPaginas: number;
-    totalItens: number;
-    itensPorPagina: number;
-    temProximaPagina: boolean;
-    temPaginaAnterior: boolean;
-  };
-}
-```
-
-### Validação (Zod)
+### Validação Zod (OBRIGATÓRIA)
 ```ts
 import { z } from 'zod';
 
@@ -161,81 +187,28 @@ export const usuarioSchema = z.object({
   senha: z.string().min(8, 'Senha deve ter pelo menos 8 caracteres').optional()
 });
 
-export const usuarioUpdateSchema = usuarioSchema.partial();
-export const usuarioPaginationSchema = z.object({
-  pagina: z.coerce.number().min(1).default(1),
-  limite: z.coerce.number().min(1).max(100).default(10),
-  busca: z.string().optional(),
-  tipo: z.enum(['admin', 'supervisor', 'attendant']).optional(),
-  ativo: z.boolean().optional()
-});
-
 export type UsuarioFormData = z.infer<typeof usuarioSchema>;
-export type UsuarioUpdateData = z.infer<typeof usuarioUpdateSchema>;
-export type UsuarioPaginationParams = z.infer<typeof usuarioPaginationSchema>;
 ```
 
-## UI/UX (Tailwind CSS 4 + shadcn/ui)
-- **Tailwind**: mobile-first, CSS variables, utilitárias, consistência
-- **shadcn/ui**: componentes base com customização via CSS vars
-- **Acessibilidade**: labels, aria-*, foco, contraste, navegação por teclado
-- **Responsividade**: breakpoints consistentes, design mobile-first
+## Autenticação e Autorização (Auth.js v5)
+- **Perfis**: admin (total), supervisor (gerencia atendentes/avaliações), attendant (próprias avaliações)
+- **Middleware**: proteger todas as rotas exceto públicas (/login, /changelog, /api/auth/*)
 
-## Banco de Dados (Prisma)
-```prisma
-model Usuario {
-  id            String   @id @default(cuid())
-  nome          String   @db.VarChar(100)
-  email         String   @unique @db.VarChar(255)
-  senha_hash    String   @db.VarChar(255)
-  tipo          TipoUsuario
-  ativo         Boolean  @default(true)
-  criado_em     DateTime @default(now())
-  atualizado_em DateTime @updatedAt
-  
-  // Relacionamentos
-  atendentes    Atendente[]
-  avaliacoes    Avaliacao[]
-  
-  @@index([email])
-  @@index([tipo, ativo])
-  @@map("usuarios")
-}
-
-enum TipoUsuario {
-  admin
-  supervisor
-  attendant
-  
-  @@map("tipo_usuario")
-}
+## Data e Hora (CRÍTICO)
+**OBRIGATÓRIO**: IA não acessa relógio do sistema. Para timestamps, usar PowerShell:
+```bash
+Get-Date -Format "dd/MM/yyyy HH:mm:ss"  # Data/hora completa
+Get-Date -Format "o"                    # ISO 8601
 ```
 
-## Data e Hora (Obrigatório)
-**CRÍTICO**: A IA não acessa o relógio do sistema. Para qualquer timestamp, obter via PowerShell:
-- Data/hora completa: `Get-Date -Format "dd/MM/yyyy HH:mm:ss"`
-- Apenas data: `Get-Date -Format "dd/MM/yyyy"`
-- Apenas hora: `Get-Date -Format "HH:mm:ss"`
-- ISO 8601: `Get-Date -Format "o"`
-
-## Qualidade e Build
-### Regras Críticas TypeScript/ESLint
-- **PROIBIDO**: `any` (usar `unknown`, tipos específicos ou `Record<string, unknown>`)
+## Regras Críticas TypeScript/ESLint
+- **PROIBIDO**: `any` (usar `unknown`, tipos específicos)
 - **OBRIGATÓRIO**: `const` (usar `let` apenas para reatribuição)
-- **OBRIGATÓRIO**: dependências completas em hooks (useEffect, useCallback, useMemo)
-- **OBRIGATÓRIO**: tipagem específica para variantes e props
+- **OBRIGATÓRIO**: dependências completas em hooks
+- **OBRIGATÓRIO**: tipagem específica para props/variantes
 - **OBRIGATÓRIO**: remover imports/variáveis não utilizados
 
-### Checklist Build
-```bash
-npm run build              # Build sem erros
-npm run lint               # Zero erros ESLint
-npx tsc --noEmit          # Zero erros TypeScript
-npm test                   # Testes passando
-npm run build:info         # Atualizar build info
-```
-
-### Fluxo Build Obrigatório
+## Fluxo Build Obrigatório
 ```bash
 # 1. Verificações
 npm run build && npm run lint && npx tsc --noEmit
@@ -247,34 +220,19 @@ npx ts-node scripts/populate-changelog.ts
 git add . && git commit -m "chore: atualiza versão [versão]"
 ```
 
-## Versionamento
-- **MAJOR**: breaking changes
-- **MINOR**: novas funcionalidades compatíveis
-- **PATCH**: correções de bugs
-- **Sincronizar**: package.json, CHANGELOG.md, build-info.json, src/lib/build-info.ts
-
-## Segurança
-- Variáveis de ambiente para secrets
-- Validação Zod em todas as entradas
-- Hash bcryptjs para senhas
-- Rate limiting em APIs críticas
-- Sanitização de dados
-- Logs sem informações sensíveis
-
-## Documentação Obrigatória
-- README.md, CHANGELOG.md, CONTRIBUTING.md, LICENSE.md
-- CODE_OF_CONDUCT.md, ISSUE_TEMPLATE.md
-- docs/ (API, desenvolvimento, usuário)
-- JSDoc para funções complexas
-- Comentários em português brasileiro
-
 ## Instruções Específicas para IA
-1. **Analisar** contexto e requisitos
-2. **Verificar** aderência aos padrões
-3. **Implementar** seguindo convenções e segurança
-4. **Documentar** alterações com descrição clara
-5. **Testar** quando possível (unit/integração)
-6. **Atualizar** documentação se necessário
+1. **SEMPRE usar MCPs** para operações de arquivo (Desktop Commander prioritário)
+2. **Analisar** contexto e requisitos com Sequential Thinking se complexo
+3. **Verificar** aderência aos padrões TypeScript/ESLint
+4. **Implementar** seguindo convenções de segurança
+5. **Documentar** alterações com descrição clara
+6. **Testar** quando possível (unit/integração)
+7. **Utilizar Gemini MCP** para:
+   - Geração automática de documentação
+   - Code review e análise de qualidade
+   - Tradução para pt-BR
+   - Criação de testes
+   - Sugestões de otimização
 
 ---
-**Responsabilidade**: manter qualidade, consistência e evolução do Koerner 360, priorizando segurança, performance e UX.
+**Responsabilidade**: manter qualidade, consistência e evolução do Koerner 360, priorizando segurança, performance e UX com uso otimizado dos MCPs.

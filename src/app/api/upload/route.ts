@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { auth } from '@/auth';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
@@ -6,6 +7,7 @@ import { z } from 'zod';
 import {
   createSuccessResponse,
   createErrorResponse,
+  validateAuthentication,
   ErrorCodes
 } from '@/lib/api-response';
 import { logError } from '@/lib/error-utils';

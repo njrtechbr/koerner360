@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import {
   createSuccessResponse,
@@ -10,25 +11,22 @@ import {
   ErrorCodes,
   withErrorHandling
 } from '@/lib/api-response';
-import { TipoUsuario } from '@prisma/client';
 
 // Schema de validação para atualização de usuário
 const atualizarUsuarioSchema = z.object({
   nome: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres').optional(),
   email: z.string().email('Email inválido').optional(),
-  tipoUsuario: z.enum(['ADMIN', 'SUPERVISOR', 'ATENDENTE']).optional(),
+  senha: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres').optional(),
+  tipoUsuario: z.enum(['ADMIN', 'SUPERVISOR', 'ATENDENTE', 'CONSULTOR']).optional(),
   ativo: z.boolean().optional(),
-  supervisorId: z.string().optional(),
+  supervisorId: z.string().nullable().optional(),
 });
 
-interface RouteParams {
-  params: {
-    id: string;
-  };
-}
-
-// GET /api/usuarios/[id] - Obter usuário específico
-export async function GET(request: NextRequest, { params }: RouteParams) {
+// GET /api/usuarios/[id] - Buscar usuário por ID
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   return withErrorHandling(async () => {
     const session = await auth();
     
@@ -36,18 +34,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const authError = validateAuthentication(session?.user);
     if (authError) return authError;
 
-    const { id } = await params;
+    // Validar permissões
+    const permissionError = validatePermissions(
+      session!.user.userType,
+      ['ADMIN', 'SUPERVISOR']
+    );
+    if (permissionError) return permissionError;
 
-    // Verificar permissões - admin, supervisor ou próprio usuário
-    if (session!.user.userType !== 'ADMIN' && 
-        session!.user.userType !== 'SUPERVISOR' && 
-        session!.user.id !== id) {
-      return createErrorResponse(
-        ErrorCodes.FORBIDDEN,
-        'Sem permissão para acessar este usuário'
-      );
-    }
+    const { id } = params;
 
+    // Verificar se o usuário existe
     const usuario = await prisma.usuario.findUnique({
       where: { id },
       select: {
@@ -70,10 +66,17 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             id: true,
             nome: true,
             email: true,
+            tipoUsuario: true,
             ativo: true,
           },
         },
-
+        _count: {
+          select: {
+            supervisoes: true,
+            avaliacoesFeitas: true,
+            avaliacoesRecebidas: true,
+          }
+        }
       },
     });
 
@@ -84,15 +87,29 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    // Verificar se o supervisor pode acessar este usuário
+    if (session!.user.userType === 'SUPERVISOR') {
+      const podeAcessar = usuario.supervisorId === session!.user.id || usuario.id === session!.user.id;
+      if (!podeAcessar) {
+        return createErrorResponse(
+          ErrorCodes.FORBIDDEN,
+          'Você não tem permissão para acessar este usuário'
+        );
+      }
+    }
+
     return createSuccessResponse(
       { usuario },
       'Usuário encontrado com sucesso'
     );
-  }, 'buscar usuário específico');
+  }, 'buscar usuário');
 }
 
-// PUT /api/usuarios/[id] - Atualizar usuário
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+// PATCH /api/usuarios/[id] - Atualizar usuário
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   return withErrorHandling(async () => {
     const session = await auth();
     
@@ -100,13 +117,26 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const authError = validateAuthentication(session?.user);
     if (authError) return authError;
 
+    // Validar permissões
+    const permissionError = validatePermissions(
+      session!.user.userType,
+      ['ADMIN', 'SUPERVISOR']
+    );
+    if (permissionError) return permissionError;
+
     const { id } = params;
     const body = await request.json();
     const validatedData = atualizarUsuarioSchema.parse(body);
 
-    // Verificar se usuário existe
+    // Verificar se o usuário existe
     const usuarioExistente = await prisma.usuario.findUnique({
       where: { id },
+      select: {
+        id: true,
+        email: true,
+        tipoUsuario: true,
+        supervisorId: true,
+      },
     });
 
     if (!usuarioExistente) {
@@ -116,31 +146,32 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Verificar permissões
-    if (session!.user.userType !== 'ADMIN' && session!.user.id !== id) {
-      // Supervisores podem editar apenas seus subordinados
-      if (session!.user.userType === TipoUsuario.SUPERVISOR) {
-        if (usuarioExistente.supervisorId !== session!.user.id) {
-          return createErrorResponse(
-            ErrorCodes.FORBIDDEN,
-            'Sem permissão para editar este usuário'
-          );
-        }
-      } else {
+    // Verificar se o supervisor pode editar este usuário
+    if (session!.user.userType === 'SUPERVISOR') {
+      const podeEditar = usuarioExistente.supervisorId === session!.user.id || usuarioExistente.id === session!.user.id;
+      if (!podeEditar) {
         return createErrorResponse(
           ErrorCodes.FORBIDDEN,
-          'Sem permissão para editar usuários'
+          'Você não tem permissão para editar este usuário'
+        );
+      }
+
+      // Supervisores não podem alterar tipo de usuário ou promover para ADMIN
+      if (validatedData.tipoUsuario && validatedData.tipoUsuario === 'ADMIN') {
+        return createErrorResponse(
+          ErrorCodes.FORBIDDEN,
+          'Supervisores não podem criar administradores'
         );
       }
     }
 
     // Verificar se email já existe (se está sendo alterado)
     if (validatedData.email && validatedData.email !== usuarioExistente.email) {
-      const emailExistente = await prisma.usuario.findUnique({
+      const emailExiste = await prisma.usuario.findUnique({
         where: { email: validatedData.email },
       });
 
-      if (emailExistente) {
+      if (emailExiste) {
         return createErrorResponse(
           ErrorCodes.CONFLICT,
           'Email já está em uso'
@@ -162,10 +193,24 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
     }
 
+    // Preparar dados para atualização
+    const dadosAtualizacao: any = {};
+    
+    if (validatedData.nome) dadosAtualizacao.nome = validatedData.nome;
+    if (validatedData.email) dadosAtualizacao.email = validatedData.email;
+    if (validatedData.tipoUsuario) dadosAtualizacao.tipoUsuario = validatedData.tipoUsuario;
+    if (validatedData.ativo !== undefined) dadosAtualizacao.ativo = validatedData.ativo;
+    if (validatedData.supervisorId !== undefined) dadosAtualizacao.supervisorId = validatedData.supervisorId;
+
+    // Hash da nova senha se fornecida
+    if (validatedData.senha) {
+      dadosAtualizacao.senha = await bcrypt.hash(validatedData.senha, 12);
+    }
+
     // Atualizar usuário
     const usuarioAtualizado = await prisma.usuario.update({
       where: { id },
-      data: validatedData,
+      data: dadosAtualizacao,
       select: {
         id: true,
         nome: true,
@@ -191,8 +236,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   }, 'atualizar usuário');
 }
 
-// DELETE /api/usuarios/[id] - Desativar usuário
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+// DELETE /api/usuarios/[id] - Desativar usuário (soft delete)
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   return withErrorHandling(async () => {
     const session = await auth();
     
@@ -200,32 +248,37 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const authError = validateAuthentication(session?.user);
     if (authError) return authError;
 
-    const { id } = params;
-
-    // Verificar se usuário existe
-    const usuarioExistente = await prisma.usuario.findUnique({
-      where: { id },
-    });
-
-    if (!usuarioExistente) {
-      return createErrorResponse(
-        ErrorCodes.NOT_FOUND,
-        'Usuário não encontrado'
-      );
-    }
-
-    // Verificar permissões - apenas admin pode desativar usuários
+    // Validar permissões - apenas ADMIN pode deletar
     const permissionError = validatePermissions(
       session!.user.userType,
       ['ADMIN']
     );
     if (permissionError) return permissionError;
 
-    // Verificar se usuário está tentando desativar a si mesmo
-    if (session!.user.id === id) {
+    const { id } = params;
+
+    // Verificar se o usuário existe
+    const usuario = await prisma.usuario.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        nome: true,
+        ativo: true,
+      },
+    });
+
+    if (!usuario) {
+      return createErrorResponse(
+        ErrorCodes.NOT_FOUND,
+        'Usuário não encontrado'
+      );
+    }
+
+    // Não permitir que o usuário delete a si mesmo
+    if (id === session!.user.id) {
       return createErrorResponse(
         ErrorCodes.VALIDATION_ERROR,
-        'Não é possível desativar sua própria conta'
+        'Você não pode desativar sua própria conta'
       );
     }
 
@@ -243,7 +296,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     return createSuccessResponse(
       { usuario: usuarioDesativado },
-      'Usuário desativado com sucesso'
+      `Usuário ${usuario.nome} foi desativado com sucesso`
     );
   }, 'desativar usuário');
 }

@@ -25,7 +25,7 @@ type FormData = {
   nome: string;
   email: string;
   senha?: string;
-  tipoUsuario: 'ADMIN' | 'SUPERVISOR' | 'ATENDENTE';
+  tipoUsuario: 'ADMIN' | 'SUPERVISOR' | 'ATENDENTE' | 'CONSULTOR';
   ativo: boolean;
   supervisorId?: string;
 };
@@ -34,7 +34,7 @@ interface Usuario {
   id: string;
   nome: string;
   email: string;
-  tipoUsuario: 'ADMIN' | 'SUPERVISOR' | 'ATENDENTE';
+  tipoUsuario: 'ADMIN' | 'SUPERVISOR' | 'ATENDENTE' | 'CONSULTOR';
   ativo: boolean;
   supervisorId?: string;
 }

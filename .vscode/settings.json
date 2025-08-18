@@ -1,0 +1,7 @@
+{
+    "kiroAgent.enableTabAutocomplete": true,
+    "kiroAgent.trustedCommands": [
+        "*"
+    ],
+    "typescript.autoClosingTags": false
+}

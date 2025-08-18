@@ -8,9 +8,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
-import { FiltrosUsuariosComponent, FiltrosUsuarios } from './filtros-usuarios';
-import { TabelaUsuarios } from './tabela-usuarios';
-import { PaginacaoUsuarios } from './paginacao-usuarios';
+import { FiltrosUsuariosComponent, FiltrosUsuarios } from './filtros-usuarios-simple';
+import { TabelaUsuarios } from './tabela-usuarios-simple';
+import { PaginacaoUsuarios } from './paginacao-usuarios-simple';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -244,17 +244,18 @@ export function UsuariosWrapper({ searchParams, podeCriar, podeEditar, podeDesat
     } finally {
       setCarregando(false);
     }
-  }, [filtros, ordenacao, paginacao.paginaAtual, paginacao.itensPorPagina, showError]);
+  }, [showError]);
 
   /**
    * Atualizar URL com os parâmetros atuais
    */
-  const atualizarURL = useCallback((novosFiltros?: FiltrosUsuario, novaOrdenacao?: OrdenacaoUsuario, novaPagina?: number) => {
+  const atualizarURL = useCallback((novosFiltros?: FiltrosUsuario, novaOrdenacao?: OrdenacaoUsuario, novaPagina?: number, novosItensPorPagina?: number) => {
     const params = new URLSearchParams();
     
     const filtrosAtivos = novosFiltros || filtros;
     const ordenacaoAtiva = novaOrdenacao || ordenacao;
     const paginaAtiva = novaPagina || paginacao.paginaAtual;
+    const itensAtivos = novosItensPorPagina || paginacao.itensPorPagina;
     
     if (filtrosAtivos.busca) {
       params.append('search', filtrosAtivos.busca);
@@ -271,8 +272,8 @@ export function UsuariosWrapper({ searchParams, podeCriar, podeEditar, podeDesat
     if (paginaAtiva > 1) {
       params.append('pagina', paginaAtiva.toString());
     }
-    if (paginacao.itensPorPagina !== 10) {
-      params.append('limite', paginacao.itensPorPagina.toString());
+    if (itensAtivos !== 10) {
+      params.append('limite', itensAtivos.toString());
     }
     if (ordenacaoAtiva.coluna !== 'nome') {
       params.append('coluna', ordenacaoAtiva.coluna);
@@ -285,7 +286,7 @@ export function UsuariosWrapper({ searchParams, podeCriar, podeEditar, podeDesat
     const newUrl = queryString ? `${pathname}?${queryString}` : pathname;
     
     router.push(newUrl, { scroll: false });
-  }, [filtros, ordenacao, paginacao.paginaAtual, paginacao.itensPorPagina, pathname, router]);
+  }, [filtros, ordenacao, paginacao, pathname, router]);
 
   /**
    * Manipular mudança de filtros
@@ -352,7 +353,7 @@ export function UsuariosWrapper({ searchParams, podeCriar, podeEditar, podeDesat
       itensPorPagina: novosItens,
       paginaAtual: novaPagina 
     }));
-    atualizarURL(undefined, undefined, novaPagina);
+    atualizarURL(undefined, undefined, novaPagina, novosItens);
     buscarUsuarios(undefined, undefined, novaPagina, novosItens);
   }, [atualizarURL, buscarUsuarios]);
 

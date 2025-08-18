@@ -60,7 +60,7 @@ export function FiltrosUsuariosComponent({ filtros, onFiltrosChange, onLimparFil
 
   useEffect(() => {
     carregarSupervisores();
-  }, []);
+  }, [carregarSupervisores]);
 
   const handleFiltroChange = (campo: keyof FiltrosUsuarios, valor: string) => {
     // Converte "todos" para string vazia para manter compatibilidade

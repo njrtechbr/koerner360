@@ -57,7 +57,7 @@ export default async function ConsultorDashboard() {
       <div className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">Dashboard Consultor</h1>
         <p className="text-muted-foreground">
-          Bem-vindo, {session.user.nome}. Aqui você pode acompanhar rankings, performance e análises comparativas.
+          Bem-vindo, {session.user.name}. Aqui você pode acompanhar rankings, performance e análises comparativas.
         </p>
       </div>
 

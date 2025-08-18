@@ -139,12 +139,12 @@ export class ScoringEngine {
         throw new Error('Avaliação ou atendente não encontrado')
       }
 
-      const { atendente, notaGeral } = avaliacao
-      const pontosAvaliacao = this.calcularPontosAvaliacao(notaGeral)
+      const { atendente, nota } = avaliacao;
+      const pontosAvaliacao = this.calcularPontosAvaliacao(nota);
 
       // Buscar ou criar gamificação do atendente
-      let gamificacao = atendente.gamificacao
-      
+      let gamificacao = atendente.gamificacao;
+
       if (!gamificacao) {
         gamificacao = await prisma.gamificacaoAtendente.create({
           data: {
@@ -155,18 +155,24 @@ export class ScoringEngine {
             sequenciaAtual: 0,
             melhorSequencia: 0,
           },
-        })
+        });
       }
 
       // Calcular sequência de dias consecutivos
-      const sequenciaAtual = await this.calcularSequenciaConsecutiva(atendente.id)
-      const bonusSequencia = this.calcularBonusSequencia(sequenciaAtual)
-      
+      const sequenciaAtual = await this.calcularSequenciaConsecutiva(
+        atendente.id,
+      );
+      const bonusSequencia = this.calcularBonusSequencia(sequenciaAtual);
+
       // Calcular nova pontuação e experiência
-      const novaPontuacao = gamificacao.pontuacaoTotal + pontosAvaliacao + bonusSequencia
-      const novaExperiencia = gamificacao.experiencia + pontosAvaliacao
-      const novoNivel = this.calcularNivel(novaExperiencia)
-      const melhorSequencia = Math.max(gamificacao.melhorSequencia, sequenciaAtual)
+      const novaPontuacao =
+        gamificacao.pontuacaoTotal + pontosAvaliacao + bonusSequencia;
+      const novaExperiencia = gamificacao.experiencia + pontosAvaliacao;
+      const novoNivel = this.calcularNivel(novaExperiencia);
+      const melhorSequencia = Math.max(
+        gamificacao.melhorSequencia,
+        sequenciaAtual,
+      );
 
       // Atualizar gamificação
       await prisma.gamificacaoAtendente.update({
@@ -175,11 +181,11 @@ export class ScoringEngine {
           pontuacaoTotal: novaPontuacao,
           experiencia: novaExperiencia,
           nivel: novoNivel,
-          sequenciaAtual,
-          melhorSequencia,
+          sequenciaAtual: sequenciaAtual,
+          melhorSequencia: melhorSequencia,
           ultimaAtualizacao: new Date(),
         },
-      })
+      });
 
       // Verificar e conceder conquistas
       await this.verificarConquistas(atendente.id, {
@@ -188,12 +194,11 @@ export class ScoringEngine {
         nivel: novoNivel,
         sequenciaAtual,
         melhorSequencia,
-        notaAvaliacao: notaGeral,
-      })
+        notaAvaliacao: nota,
+      });
 
       // Atualizar métricas de performance
-      await this.atualizarMetricasPerformance(atendente.id)
-
+      await this.atualizarMetricasPerformance(atendente.id);
     } catch (error) {
       console.error('Erro ao processar avaliação:', error)
       throw error
@@ -207,22 +212,22 @@ export class ScoringEngine {
     const avaliacoes = await prisma.avaliacao.findMany({
       where: {
         atendenteId,
-        notaGeral: { gte: 4 }, // Considera apenas notas 4 e 5
+        nota: { gte: 4 }, // Considera apenas notas 4 e 5
       },
-      orderBy: { dataAvaliacao: 'desc' },
+      orderBy: { criadoEm: 'desc' },
       take: 90, // Últimos 90 dias
-    })
+    });
 
-    if (avaliacoes.length === 0) return 0
+    if (avaliacoes.length === 0) return 0;
 
-    let sequencia = 0
-    let dataAnterior: Date | null = null
+    let sequencia = 0;
+    let dataAnterior: Date | null = null;
 
     for (const avaliacao of avaliacoes) {
-      const dataAvaliacao = new Date(avaliacao.dataAvaliacao)
-      
+      const dataAvaliacao = new Date(avaliacao.criadoEm);
+
       if (!dataAnterior) {
-        sequencia = 1
+        sequencia = 1;
         dataAnterior = dataAvaliacao
         continue
       }
@@ -271,26 +276,38 @@ export class ScoringEngine {
 
     for (const conquista of conquistas) {
       // Pular se já obtida
-      if (conquistasObtidaIds.has(conquista.id)) continue
+      if (conquistasObtidaIds.has(conquista.id)) continue;
 
       // Verificar se atende aos requisitos
-      const requisitos = conquista.requisito as Record<string, unknown>
-      let atendeRequisitos = true
+      const requisitos = conquista.requisito as Record<string, number>;
+      let atendeRequisitos = true;
 
-      if (requisitos.pontuacaoMinima && metricas.pontuacaoTotal < requisitos.pontuacaoMinima) {
-        atendeRequisitos = false
+      if (
+        requisitos.pontuacaoMinima &&
+        metricas.pontuacaoTotal < requisitos.pontuacaoMinima
+      ) {
+        atendeRequisitos = false;
       }
 
-      if (requisitos.nivelMinimo && metricas.nivel < requisitos.nivelMinimo) {
-        atendeRequisitos = false
+      if (
+        requisitos.nivelMinimo &&
+        metricas.nivel < requisitos.nivelMinimo
+      ) {
+        atendeRequisitos = false;
       }
 
-      if (requisitos.sequenciaMinima && metricas.melhorSequencia < requisitos.sequenciaMinima) {
-        atendeRequisitos = false
+      if (
+        requisitos.sequenciaMinima &&
+        metricas.melhorSequencia < requisitos.sequenciaMinima
+      ) {
+        atendeRequisitos = false;
       }
 
-      if (requisitos.notaMinima && metricas.notaAvaliacao < requisitos.notaMinima) {
-        atendeRequisitos = false
+      if (
+        requisitos.notaMinima &&
+        metricas.notaAvaliacao < requisitos.notaMinima
+      ) {
+        atendeRequisitos = false;
       }
 
       // Conceder conquista se atende aos requisitos
@@ -301,7 +318,7 @@ export class ScoringEngine {
             conquistaId: conquista.id,
             pontosGanhos: conquista.pontos,
           },
-        })
+        });
 
         // Adicionar pontos da conquista
         await prisma.gamificacaoAtendente.update({
@@ -311,7 +328,7 @@ export class ScoringEngine {
               increment: conquista.pontos,
             },
           },
-        })
+        });
       }
     }
   }
@@ -329,31 +346,32 @@ export class ScoringEngine {
     const avaliacoes = await prisma.avaliacao.findMany({
       where: {
         atendenteId,
-        dataAvaliacao: {
+        criadoEm: {
           gte: inicioMes,
           lte: fimMes,
         },
       },
     })
 
-    if (avaliacoes.length === 0) return
+    if (avaliacoes.length === 0) return;
 
     // Calcular métricas
-    const totalAvaliacoes = avaliacoes.length
-    const somaNotas = avaliacoes.reduce((sum, av) => sum + av.notaGeral, 0)
-    const mediaNotas = somaNotas / totalAvaliacoes
-    
-    const notasExcelentes = avaliacoes.filter(av => av.notaGeral === 5).length
-    const notasBoas = avaliacoes.filter(av => av.notaGeral === 4).length
-    const notasRegulares = avaliacoes.filter(av => av.notaGeral === 3).length
-    const notasRuins = avaliacoes.filter(av => av.notaGeral <= 2).length
-    
-    const percentualSatisfacao = ((notasExcelentes + notasBoas) / totalAvaliacoes) * 100
-    
+    const totalAvaliacoes = avaliacoes.length;
+    const somaNotas = avaliacoes.reduce((sum, av) => sum + av.nota, 0);
+    const mediaNotas = somaNotas / totalAvaliacoes;
+
+    const notasExcelentes = avaliacoes.filter(av => av.nota === 5).length;
+    const notasBoas = avaliacoes.filter(av => av.nota === 4).length;
+    const notasRegulares = avaliacoes.filter(av => av.nota === 3).length;
+    const notasRuins = avaliacoes.filter(av => av.nota <= 2).length;
+
+    const percentualSatisfacao =
+      ((notasExcelentes + notasBoas) / totalAvaliacoes) * 100;
+
     // Buscar gamificação para pontuação do período
     const gamificacao = await prisma.gamificacaoAtendente.findUnique({
       where: { atendenteId },
-    })
+    });
 
     // Criar ou atualizar métrica
     await prisma.metricaPerformance.upsert({
@@ -365,13 +383,13 @@ export class ScoringEngine {
         },
       },
       update: {
-        totalAvaliacoes,
-        mediaNotas,
-        notasExcelentes,
-        notasBoas,
-        notasRegulares,
-        notasRuins,
-        percentualSatisfacao,
+        totalAvaliacoes: totalAvaliacoes,
+        mediaNotas: mediaNotas,
+        notasExcelentes: notasExcelentes,
+        notasBoas: notasBoas,
+        notasRegulares: notasRegulares,
+        notasRuins: notasRuins,
+        percentualSatisfacao: percentualSatisfacao,
         pontuacaoPeriodo: gamificacao?.pontuacaoTotal || 0,
         sequenciaDias: gamificacao?.sequenciaAtual || 0,
       },
@@ -379,17 +397,17 @@ export class ScoringEngine {
         atendenteId,
         periodo,
         tipoPeríodo: 'MENSAL',
-        totalAvaliacoes,
-        mediaNotas,
-        notasExcelentes,
-        notasBoas,
-        notasRegulares,
-        notasRuins,
-        percentualSatisfacao,
+        totalAvaliacoes: totalAvaliacoes,
+        mediaNotas: mediaNotas,
+        notasExcelentes: notasExcelentes,
+        notasBoas: notasBoas,
+        notasRegulares: notasRegulares,
+        notasRuins: notasRuins,
+        percentualSatisfacao: percentualSatisfacao,
         pontuacaoPeriodo: gamificacao?.pontuacaoTotal || 0,
         sequenciaDias: gamificacao?.sequenciaAtual || 0,
       },
-    })
+    });
   }
 
   /**
@@ -400,8 +418,8 @@ export class ScoringEngine {
       // Buscar todas as avaliações do atendente
       const avaliacoes = await prisma.avaliacao.findMany({
         where: { atendenteId },
-        orderBy: { dataAvaliacao: 'asc' },
-      })
+        orderBy: { criadoEm: 'asc' },
+      });
 
       // Resetar gamificação
       await prisma.gamificacaoAtendente.upsert({
@@ -421,7 +439,7 @@ export class ScoringEngine {
           sequenciaAtual: 0,
           melhorSequencia: 0,
         },
-      })
+      });
 
       // Remover conquistas existentes
       await prisma.conquistaAtendente.deleteMany({

@@ -125,12 +125,12 @@ export default function AdminChangelogPage() {
     if (session?.user?.userType !== TipoUsuario.ADMIN) {
       carregarChangelogs();
     }
-  }, [session]);
+  }, [session, carregarChangelogs]);
 
-  const carregarChangelogs = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/changelog');
+    async function carregarChangelogs() {
+     try {
+       setLoading(true);
+       const response = await fetch('/api/changelog');
       
       if (!response.ok) {
         throw new Error('Erro ao carregar changelogs');
