@@ -37,7 +37,9 @@ function canAccessRoute(userType: TipoUsuario | undefined, route: string): boole
 export default auth((req) => {
   const { pathname } = req.nextUrl
   const isLoggedIn = !!req.auth
-  const userType = req.auth?.user?.tipo as TipoUsuario | undefined
+  const userType = req.auth?.user?.userType as TipoUsuario | undefined
+
+
 
   // Rotas públicas que não precisam de autenticação
   const publicRoutes = ['/login', '/changelog']
@@ -45,18 +47,21 @@ export default auth((req) => {
 
   // Se não está logado e não é uma rota pública, redirecionar para login
   if (!isLoggedIn && !isPublicRoute) {
+
     return Response.redirect(new URL('/login', req.url))
   }
 
   // Se está logado e está na página de login, redirecionar para dashboard apropriado
   if (isLoggedIn && pathname === '/login') {
     const dashboardUrl = getDashboardUrl(userType)
+
     return Response.redirect(new URL(dashboardUrl, req.url))
   }
 
   // Redirecionar root para dashboard apropriado se logado
   if (isLoggedIn && pathname === '/') {
     const dashboardUrl = getDashboardUrl(userType)
+
     return Response.redirect(new URL(dashboardUrl, req.url))
   }
 
@@ -66,6 +71,7 @@ export default auth((req) => {
     if (!canAccessRoute(userType, pathname)) {
       // Redirecionar para dashboard apropriado se não tem permissão
       const dashboardUrl = getDashboardUrl(userType)
+
       return Response.redirect(new URL(dashboardUrl, req.url))
     }
   }

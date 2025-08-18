@@ -8,7 +8,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
-import { FiltrosUsuarios } from './filtros-usuarios';
+import { FiltrosUsuariosComponent, FiltrosUsuarios } from './filtros-usuarios';
 import { TabelaUsuarios } from './tabela-usuarios';
 import { PaginacaoUsuarios } from './paginacao-usuarios';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -290,12 +290,38 @@ export function UsuariosWrapper({ searchParams, podeCriar, podeEditar, podeDesat
   /**
    * Manipular mudança de filtros
    */
-  const handleFiltrosChange = useCallback((novosFiltros: FiltrosUsuario) => {
-    setFiltros(novosFiltros);
+  const handleFiltrosChange = useCallback((novosFiltros: FiltrosUsuarios) => {
+    // Converter FiltrosUsuarios para FiltrosUsuario
+    const filtrosConvertidos: FiltrosUsuario = {
+      busca: novosFiltros.busca || undefined,
+      tipoUsuario: novosFiltros.tipoUsuario as 'ADMIN' | 'SUPERVISOR' | 'ATENDENTE' | 'CONSULTOR' || undefined,
+      ativo: novosFiltros.ativo === 'true' ? true : novosFiltros.ativo === 'false' ? false : undefined,
+      supervisorId: novosFiltros.supervisorId || undefined
+    };
+    
+    setFiltros(filtrosConvertidos);
     const novaPagina = 1; // Reset para primeira página
     setPaginacao(prev => ({ ...prev, paginaAtual: novaPagina }));
-    atualizarURL(novosFiltros, undefined, novaPagina);
-    buscarUsuarios(novosFiltros, undefined, novaPagina);
+    atualizarURL(filtrosConvertidos, undefined, novaPagina);
+    buscarUsuarios(filtrosConvertidos, undefined, novaPagina);
+  }, [atualizarURL, buscarUsuarios]);
+
+  /**
+   * Limpar filtros
+   */
+  const handleLimparFiltros = useCallback(() => {
+    const filtrosLimpos: FiltrosUsuario = {
+      busca: undefined,
+      tipoUsuario: undefined,
+      ativo: undefined,
+      supervisorId: undefined
+    };
+    
+    setFiltros(filtrosLimpos);
+    const novaPagina = 1;
+    setPaginacao(prev => ({ ...prev, paginaAtual: novaPagina }));
+    atualizarURL(filtrosLimpos, undefined, novaPagina);
+    buscarUsuarios(filtrosLimpos, undefined, novaPagina);
   }, [atualizarURL, buscarUsuarios]);
 
   /**
@@ -394,9 +420,15 @@ export function UsuariosWrapper({ searchParams, podeCriar, podeEditar, podeDesat
       {carregando ? (
         <FiltrosLoading />
       ) : (
-        <FiltrosUsuarios
-          filtros={filtros}
+        <FiltrosUsuariosComponent
+          filtros={{
+            busca: filtros.busca || '',
+            tipoUsuario: filtros.tipoUsuario || '',
+            ativo: filtros.ativo !== undefined ? filtros.ativo.toString() : '',
+            supervisorId: filtros.supervisorId || ''
+          }}
           onFiltrosChange={handleFiltrosChange}
+          onLimparFiltros={handleLimparFiltros}
         />
       )}
 

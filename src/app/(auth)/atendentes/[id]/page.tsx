@@ -5,7 +5,7 @@
 
 import { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
-import { auth } from '../../../../auth';
+import { auth } from '@/auth';
 import { TipoUsuario } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { DetalhesAtendente } from '@/components/atendentes/detalhes-atendente';

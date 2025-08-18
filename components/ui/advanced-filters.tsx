@@ -79,16 +79,19 @@ interface ConfiguracaoFiltro {
   busca?: boolean
   grupo?: string
   dependeDe?: string
-  condicao?: (valor: any) => boolean
-  formatador?: (valor: any) => string
-  validador?: (valor: any) => boolean | string
+  condicao?: (valor: FiltroValor) => boolean
+  formatador?: (valor: FiltroValor) => string
+  validador?: (valor: FiltroValor) => boolean | string
 }
+
+// Tipo para valores de filtro
+type FiltroValor = string | number | boolean | Date | string[] | number[] | null | undefined
 
 interface FiltroAtivo {
   id: string
   operador: OperadorComparacao
-  valor: any
-  valorSecundario?: any // Para ranges
+  valor: FiltroValor
+  valorSecundario?: FiltroValor // Para ranges
   label?: string
 }
 

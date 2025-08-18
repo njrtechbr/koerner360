@@ -7,6 +7,16 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['@/components'],
   },
+  
+  // Configurações do Turbopack para SVG
+  turbopack: {
+    rules: {
+      '*.svg': {
+        loaders: ['@svgr/webpack'],
+        as: '*.js',
+      },
+    },
+  },
 };
 
 export default nextConfig;

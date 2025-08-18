@@ -113,17 +113,9 @@ export default async function GamificacaoPage() {
     }
   ]
 
-  const niveis = [
-    { nome: 'Bronze', min: 0, max: 1000, cor: 'bg-amber-600' },
-    { nome: 'Prata', min: 1000, max: 2500, cor: 'bg-gray-400' },
-    { nome: 'Ouro', min: 2500, max: 5000, cor: 'bg-yellow-500' },
-    { nome: 'Platina', min: 5000, max: 10000, cor: 'bg-blue-500' },
-    { nome: 'Diamante', min: 10000, max: Infinity, cor: 'bg-purple-500' }
-  ]
 
-  const getNivelAtual = (pontos: number) => {
-    return niveis.find(nivel => pontos >= nivel.min && pontos < nivel.max) || niveis[0]
-  }
+
+
 
   const getIconeNivel = (nivel: string) => {
     switch (nivel) {

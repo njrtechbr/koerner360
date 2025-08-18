@@ -1,0 +1,20 @@
+{
+  "enabled": true,
+  "name": "Respostas em PT-BR",
+  "description": "Hook que garante que todas as respostas do AI sejam sempre em português brasileiro, independente do idioma da pergunta ou contexto",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "src/**/*.tsx",
+      "src/**/*.ts",
+      "**/*.md",
+      "**/*.json",
+      "**/*.js"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "IMPORTANTE: Você deve SEMPRE responder em português brasileiro (pt-br), independentemente do idioma usado na pergunta ou no contexto dos arquivos. Use linguagem clara, profissional e adequada ao contexto técnico quando necessário. Mantenha termos técnicos em inglês apenas quando não houver tradução adequada ou quando for padrão da indústria (ex: \"commit\", \"deploy\", \"hook\")."
+  }
+}

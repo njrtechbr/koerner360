@@ -8,7 +8,7 @@ import { Suspense } from 'react';
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { TipoUsuario } from '@prisma/client';
-import { hasPermission } from '@/hooks/use-permissions';
+import { canManageUsers } from '@/lib/permissions';
 import { UsuariosWrapper } from '@/components/usuarios/usuarios-wrapper';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -96,7 +96,7 @@ export default async function UsuariosPage({ searchParams }: UsuariosPageProps) 
   }
 
   // Verificar permissões
-  const podeGerenciarUsuarios = hasPermission(session.user.tipo, 'gerenciar_usuarios');
+  const podeGerenciarUsuarios = canManageUsers(session.user.tipo);
   if (!podeGerenciarUsuarios) {
     redirect('/dashboard');
   }

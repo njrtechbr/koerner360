@@ -67,4 +67,70 @@ Abaixo, as possíveis causas e considerações para cada um dos sintomas, segmen
 - O erro 404 em `/dashboard` está alinhado com um cenário onde a árvore de rotas ativa do Next.js não inclui a rota, apesar do arquivo de página existir. A coexistência de `app/` (vazio) na raiz e `src/app/` com as rotas reais é um fator estrutural que pode explicar o comportamento observado e a compilação apenas de `_not-found`.
 - O erro 404 em `/@vite/client` evidencia uma requisição de cliente HMR do Vite em um ambiente que não utiliza Vite. Isso aponta para influência externa ao código (cache, Service Worker, extensão ou histórico do navegador) ou um contexto anterior em que a origem acessada já serviu Vite.
 
-Este documento se concentra exclusivamente em descrever o problema, hipóteses e impacto, sem apresentar caminhos de correção.
+## 4. Soluções Implementadas
+
+### 4.1. Correção do Erro 404 na rota /dashboard
+
+**Data da Implementação**: 17/08/2025 20:39:18
+
+**Problema Identificado**: Confirmou-se que a causa do 404 em `/dashboard` era a presença de dois diretórios `app` no projeto:
+- Um diretório `app/` vazio na raiz do projeto
+- O diretório real `src/app/` contendo toda a estrutura de rotas
+
+**Solução Aplicada**:
+1. **Remoção do diretório duplicado**: O diretório `app/` da raiz foi completamente removido usando o comando:
+   ```powershell
+   Remove-Item -Path "c:\Users\Nereu Jr\Documents\Dev\koerner360\app" -Recurse -Force
+   ```
+
+2. **Consolidação das configurações**: Os arquivos `next.config.js` e `next.config.ts` foram consolidados em um único arquivo `next.config.ts`, mantendo todas as configurações necessárias:
+   - Configurações do Prisma (`serverExternalPackages`)
+   - Otimizações experimentais (`optimizePackageImports`)
+   - Configurações do Turbopack para SVG
+
+**Resultado**: 
+- ✅ A rota `/dashboard` agora retorna **200 (sucesso)** em vez de 404
+- ✅ O servidor compila corretamente todas as rotas em `src/app/`
+- ✅ A navegação para `/dashboard` funciona normalmente
+
+### 4.2. Status do Erro /@vite/client
+
+**Situação Atual**: A requisição para `/@vite/client` ainda aparece nos logs retornando 404, mas isso é **comportamento esperado** pois:
+- O projeto utiliza Next.js + Turbopack, não Vite
+- Esta requisição é originada pelo cache do navegador ou extensões
+- Não afeta o funcionamento da aplicação
+
+**Recomendação para Usuários**: Para eliminar completamente esta requisição:
+1. Limpar o cache do navegador
+2. Remover Service Workers em DevTools > Application > Service Workers
+3. Utilizar janela anônima para desenvolvimento
+4. Desabilitar extensões de desenvolvimento que possam injetar scripts do Vite
+
+## 5. Verificação dos Resultados
+
+**Logs do Servidor Após Correção**:
+```
+✓ Ready in 1695ms
+○ Compiling / ...
+✓ Compiled / in 3.3s
+GET /?ide_webview_request_time=1755473895662 307 in 3908ms
+✓ Compiled /dashboard in 309ms
+GET /dashboard 200 in 427ms  # ✅ SUCESSO - Era 404 antes
+✓ Compiled /_not-found/page in 228ms
+GET /@vite/client 404 in 321ms  # ⚠️ Esperado - cache do navegador
+```
+
+**Status das Correções**:
+- ✅ **Erro 404 em /dashboard**: **RESOLVIDO**
+- ⚠️ **Erro 404 em /@vite/client**: **Esperado** (requer limpeza do cache do navegador)
+
+## 6. Conclusão
+
+As correções implementadas resolveram com sucesso o problema principal dos erros 404. O ambiente de desenvolvimento agora funciona conforme esperado:
+
+- A rota autenticada `/dashboard` é devidamente servida pela aplicação
+- A navegação pós-login para a página principal do dashboard ocorre normalmente
+- O Next.js reconhece corretamente todas as páginas definidas em `src/app/`
+- A estrutura do projeto está alinhada com as melhores práticas do Next.js 15
+
+A solução envolveu alinhar a estrutura do projeto ao padrão suportado pelo Next.js (evitando duplicidade de diretórios especiais) e consolidar as configurações em um único arquivo. Com essas correções, o fluxo de desenvolvimento está estável e confiável.

@@ -5,7 +5,7 @@
 
 import { Metadata } from 'next';
 import { Suspense } from 'react';
-import { auth } from '../../../auth';
+import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { TipoUsuario } from '@prisma/client';
 import { MainLayout } from '@/components/layout/main-layout';

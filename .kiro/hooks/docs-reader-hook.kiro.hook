@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "Documentation Reader",
+  "description": "Automatically reads all markdown files in the /docs folder to understand the project whenever documentation is updated",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "docs/*.md"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Please read and analyze all the markdown files in the /docs folder to understand the project structure, features, and documentation. Provide a comprehensive summary of what you learned about the project from these documentation files."
+  }
+}

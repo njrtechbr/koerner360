@@ -22,15 +22,15 @@ export interface BuildInfo {
 }
 
 export const buildInfo: BuildInfo = {
-  "version": "0.2.6-dev.2025-08-17T16-48-19",
-  "branch": "master",
-  "commit": "9678395227e50e2f14c87bea509f7ad94b9299ca",
-  "commitShort": "9678395",
-  "commitMessage": "chore: atualiza informações de build para versão 0.2.6",
+  "version": "0.2.6-dev.2025-08-18T06-17-39",
+  "branch": "dev",
+  "commit": "61aa7e23a31540c7caf685f2923f65732cef8ac6",
+  "commitShort": "61aa7e2",
+  "commitMessage": "docs: add analysis of 404 errors for dashboard and vite client\n\nAdd detailed documentation analyzing the 404 errors encountered for \"/dashboard\" and \"/@vite/client\" routes in the Next.js development environment. The document describes the problem, impact, and potential causes without proposing solutions.",
   "hasUncommittedChanges": true,
-  "lastCommitDate": "2025-08-16 18:27:32 -0300",
-  "buildDate": "2025-08-17T16:48:19.717Z",
-  "buildTimestamp": 1755449299717,
+  "lastCommitDate": "2025-08-17 20:23:46 -0300",
+  "buildDate": "2025-08-18T06:17:39.593Z",
+  "buildTimestamp": 1755497859593,
   "environment": "development",
   "nodeVersion": "v22.18.0",
   "platform": "win32",

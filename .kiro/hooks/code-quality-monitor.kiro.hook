@@ -1,0 +1,24 @@
+{
+  "enabled": true,
+  "name": "Code Quality Monitor",
+  "description": "Monitors source code files for changes and analyzes modified code for potential improvements, code smells, design patterns, and best practices",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "src/**/*.ts",
+      "src/**/*.tsx",
+      "components/**/*.ts",
+      "components/**/*.tsx",
+      "lib/**/*.ts",
+      "scripts/**/*.ts",
+      "prisma/**/*.prisma",
+      "auth.ts",
+      "middleware.ts"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Analyze the modified code in the changed files for potential improvements. Focus on:\n\n1. **Code Smells**: Identify any code smells such as:\n   - Long methods/functions\n   - Duplicate code\n   - Large classes/components\n   - Dead code\n   - Magic numbers/strings\n   - Complex conditionals\n\n2. **Design Patterns**: Suggest appropriate design patterns that could improve the code structure:\n   - Component composition patterns\n   - Custom hooks for reusable logic\n   - Provider patterns for state management\n   - Factory patterns for object creation\n   - Observer patterns for event handling\n\n3. **Best Practices**: Check adherence to:\n   - TypeScript best practices (proper typing, avoiding any)\n   - React best practices (proper hooks usage, component structure)\n   - Next.js best practices (proper use of App Router, API routes)\n   - Performance optimizations (memoization, lazy loading)\n   - Security practices (input validation, authentication)\n   - Accessibility standards\n\n4. **Code Quality**: Evaluate:\n   - Function/component complexity\n   - Naming conventions\n   - Code organization and structure\n   - Error handling\n   - Documentation and comments\n\nProvide specific, actionable recommendations with code examples where appropriate. Focus on the most impactful improvements that align with the project's TypeScript/Next.js/React stack."
+  }
+}

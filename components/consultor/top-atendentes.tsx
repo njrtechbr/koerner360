@@ -28,6 +28,21 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 
+// Interface para tipificar os dados do atendente
+interface Atendente {
+  id: string
+  nome: string
+  cargo: string
+  portaria: string
+  pontuacaoTotal: number
+  mediaNotas: number
+  experiencia: number
+  nivel: number
+  destaque?: string | null
+  tendencia?: string
+  experienciaProximoNivel?: number
+}
+
 interface TopAtendente {
   id: string
   nome: string
@@ -106,7 +121,7 @@ export function TopAtendentes({
         const atendentesData = result.data.atendentes || []
         
         // Adicionar destaques e tendências
-        const atendentesComDestaques = atendentesData.map((atendente: any, index: number) => {
+        const atendentesComDestaques = atendentesData.map((atendente: Atendente, index: number) => {
           let destaque = null
           
           if (index === 0 && atendente.pontuacaoTotal > 1000) {
@@ -134,8 +149,8 @@ export function TopAtendentes({
         setAtendentes(atendentesComDestaques)
         
         // Extrair filtros únicos
-        const cargosUnicos = [...new Set(atendentesData.map((a: any) => a.cargo))]
-        const portariasUnicas = [...new Set(atendentesData.map((a: any) => a.portaria))]
+        const cargosUnicos = [...new Set(atendentesData.map((a: Atendente) => a.cargo))]
+        const portariasUnicas = [...new Set(atendentesData.map((a: Atendente) => a.portaria))]
         
         setFiltrosCargos(cargosUnicos)
         setFiltrosPortarias(portariasUnicas)

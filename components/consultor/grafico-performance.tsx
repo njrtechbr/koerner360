@@ -277,8 +277,8 @@ export function GraficoPerformance({ periodo = 'mensal' }: GraficoPerformancePro
             {getTipoGraficoIcon(tipoGrafico)}
             Evolução de Performance - {getMetricaLabel(metricaFoco)}
           </CardTitle>
-          <div className="flex items-center gap-2">
-            <Select value={periodoSelecionado} onValueChange={(value: any) => setPeriodoSelecionado(value)}>
+           <div className="flex items-center gap-2">
+            <Select value={periodoSelecionado} onValueChange={(value: string) => setPeriodoSelecionado(value)}>
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>

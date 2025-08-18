@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
-import { SimpleLayout } from '@/components/layout/simple-layout'
+import { MainLayout } from '@/components/layout/main-layout'
 
 export const metadata: Metadata = {
   title: 'Dashboard - Koerner 360',
@@ -20,8 +20,8 @@ export default async function AuthLayout({
   }
 
   return (
-    <SimpleLayout>
+    <MainLayout>
       {children}
-    </SimpleLayout>
+    </MainLayout>
   )
 }
