@@ -1,204 +1,187 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { prisma } from '@/lib/prisma';
-import bcrypt from 'bcryptjs';
-import { z } from 'zod';
+import { UsuarioService } from '@/lib/services/usuario-service';
 import {
-  createSuccessResponse,
-  createPaginatedResponse,
-  createErrorResponse,
-  validateAuthentication,
-  validatePermissions,
-  ErrorCodes,
-  withErrorHandling
-} from '@/lib/api-response';
-import { TipoUsuario } from '@prisma/client';
+  validarCriarUsuario,
+  validarFiltrosUsuario,
+  type TipoUsuario
+} from '@/lib/validations/usuario';
+import {
+  type CriarUsuarioRequest,
+  type BuscarUsuariosParams,
+  type ListarUsuariosResponse,
+  type MutarUsuarioResponse,
+  MENSAGENS_ERRO_USUARIO
+} from '@/types/usuario';
+import { logError } from '@/lib/error-utils';
 
-// Schema de validação para criação de usuário
-const criarUsuarioSchema = z.object({
-  nome: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  email: z.string().email('Email inválido'),
-  senha: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
-  tipoUsuario: z.enum(['ADMIN', 'SUPERVISOR', 'ATENDENTE']),
-  supervisorId: z.string().optional(),
-});
+// Função auxiliar para criar resposta de erro
+function criarRespostaErro(message: string, status: number = 500) {
+  return NextResponse.json(
+    {
+      success: false,
+      error: message,
+      timestamp: new Date().toISOString()
+    },
+    { status }
+  );
+}
+
+// Função auxiliar para criar resposta de sucesso
+function criarRespostaSucesso<T>(data: T, status: number = 200) {
+  return NextResponse.json(
+    {
+      success: true,
+      data,
+      timestamp: new Date().toISOString()
+    },
+    { status }
+  );
+}
 
 // Schema removido - não utilizado nesta rota
 
 // GET /api/usuarios - Listar usuários
 export async function GET(request: NextRequest) {
-  return withErrorHandling(async () => {
+  try {
+    // Verificar autenticação
     const session = await auth();
-    
-    // Validar autenticação
-    const authError = validateAuthentication(session?.user);
-    if (authError) return authError;
-
-    // Validar permissões
-    const permissionError = validatePermissions(
-      session!.user.userType,
-      ['ADMIN', 'SUPERVISOR']
-    );
-    if (permissionError) return permissionError;
-
-    // Filtro baseado no tipo de usuário
-    let whereClause = {};
-    if (session?.user?.userType === TipoUsuario.SUPERVISOR) {
-      whereClause = {
-        OR: [
-          { supervisorId: session!.user.id },
-          { id: session!.user.id }
-        ]
-      };
+    if (!session?.user) {
+      return criarRespostaErro(MENSAGENS_ERRO_USUARIO.NAO_AUTORIZADO, 401);
     }
 
+    const usuarioLogado = {
+      id: session.user.id!,
+      tipoUsuario: session.user.tipoUsuario as TipoUsuario
+    };
+
+    // Verificar permissões básicas
+    const podeGerenciarUsuarios = usuarioLogado.tipoUsuario === 'ADMIN';
+    const podeGerenciarAtendentes = ['ADMIN', 'SUPERVISOR'].includes(usuarioLogado.tipoUsuario);
+    
+    if (!podeGerenciarUsuarios && !podeGerenciarAtendentes) {
+      return criarRespostaErro(MENSAGENS_ERRO_USUARIO.PERMISSAO_NEGADA, 403);
+    }
+
+    // Extrair e validar parâmetros da URL
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('pagina') || searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limite') || searchParams.get('limit') || '10');
-    const search = searchParams.get('search') || searchParams.get('busca') || '';
-    const tipoUsuario = searchParams.get('tipoUsuario') || '';
-    const ativo = searchParams.get('ativo');
-    
-    const skip = (page - 1) * limit;
+    const params = {
+      busca: searchParams.get('busca') || undefined,
+      tipoUsuario: searchParams.get('tipoUsuario') as TipoUsuario | undefined,
+      ativo: searchParams.get('ativo') ? searchParams.get('ativo') === 'true' : undefined,
+      supervisorId: searchParams.get('supervisorId') || undefined,
+      pagina: parseInt(searchParams.get('pagina') || '1'),
+      limite: parseInt(searchParams.get('limite') || '10'),
+      ordenacao: searchParams.get('ordenacao') || 'nome',
+      direcao: (searchParams.get('direcao') || 'asc') as 'asc' | 'desc'
+    };
 
-    // Construir filtros
-    const where: Record<string, unknown> = { ...whereClause };
-    
-    if (search) {
-      where.OR = [
-        { nome: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-    
-    if (tipoUsuario) {
-      where.tipoUsuario = tipoUsuario;
-    }
-    
-    if (ativo !== null && ativo !== undefined) {
-      where.ativo = ativo === 'true';
+    // Validar parâmetros
+    const validacao = validarFiltrosUsuario(params);
+    if (!validacao.success) {
+      return criarRespostaErro(
+        `Parâmetros inválidos: ${validacao.error.errors[0]?.message}`,
+        400
+      );
     }
 
-    const [usuarios, total] = await Promise.all([
-      prisma.usuario.findMany({
-        where,
-        skip,
-        take: limit,
-        select: {
-          id: true,
-          nome: true,
-          email: true,
-          tipoUsuario: true,
-          ativo: true,
-          criadoEm: true,
-          atualizadoEm: true,
-          supervisorId: true,
-          supervisor: {
-            select: {
-              id: true,
-              nome: true,
-            },
-          },
-        },
-        orderBy: { criadoEm: 'desc' },
-      }),
-      prisma.usuario.count({ where }),
-    ]);
+    // Preparar parâmetros para o serviço
+    const buscarParams: BuscarUsuariosParams = {
+      filtros: {
+        busca: params.busca,
+        tipoUsuario: params.tipoUsuario,
+        ativo: params.ativo,
+        supervisorId: params.supervisorId
+      },
+      ordenacao: {
+        coluna: params.ordenacao,
+        direcao: params.direcao
+      },
+      paginacao: {
+        paginaAtual: params.pagina,
+        itensPorPagina: params.limite,
+        totalPaginas: 1,
+        totalItens: 0,
+        temProximaPagina: false,
+        temPaginaAnterior: false
+      },
+      incluirInativos: params.ativo === undefined,
+      incluirContadores: true
+    };
 
-    const totalPages = Math.ceil(total / limit);
+    // Buscar usuários usando o serviço
+    const resultado = await UsuarioService.buscarUsuarios(buscarParams, usuarioLogado);
 
-    return createPaginatedResponse(
-      usuarios,
-      {
-        paginaAtual: page,
-        itensPorPagina: limit,
-        totalItens: total,
-        totalPaginas: totalPages,
-        temProximaPagina: page < totalPages,
-        temPaginaAnterior: page > 1,
-      }
-    );
-  }, 'buscar usuários');
+    const response: ListarUsuariosResponse = {
+      usuarios: resultado.usuarios,
+      paginacao: resultado.paginacao,
+      total: resultado.total
+    };
+
+    return criarRespostaSucesso(response);
+  } catch (error) {
+    logError('Erro na API GET /usuarios', error);
+    
+    if (error instanceof Error && 'statusCode' in error) {
+      return criarRespostaErro(error.message, (error as any).statusCode);
+    }
+    
+    return criarRespostaErro(MENSAGENS_ERRO_USUARIO.ERRO_INTERNO, 500);
+  }
 }
 
 // POST /api/usuarios - Criar usuário
 export async function POST(request: NextRequest) {
-  return withErrorHandling(async () => {
+  try {
+    // Verificar autenticação
     const session = await auth();
-    
-    // Validar autenticação
-    const authError = validateAuthentication(session?.user);
-    if (authError) return authError;
+    if (!session?.user) {
+      return criarRespostaErro(MENSAGENS_ERRO_USUARIO.NAO_AUTORIZADO, 401);
+    }
 
-    // Validar permissões - apenas admin pode criar usuários
-    const permissionError = validatePermissions(
-      session!.user.userType,
-      ['ADMIN']
-    );
-    if (permissionError) return permissionError;
+    const usuarioLogado = {
+      id: session.user.id!,
+      tipoUsuario: session.user.tipoUsuario as TipoUsuario
+    };
 
-    const body = await request.json();
-    const validatedData = criarUsuarioSchema.parse(body);
+    // Verificar permissões - apenas ADMIN pode criar usuários
+    if (usuarioLogado.tipoUsuario !== 'ADMIN') {
+      return criarRespostaErro(MENSAGENS_ERRO_USUARIO.PERMISSAO_NEGADA, 403);
+    }
 
-    // Verificar se email já existe
-    const usuarioExistente = await prisma.usuario.findUnique({
-      where: { email: validatedData.email },
-    });
+    // Extrair e validar dados do corpo da requisição
+    let body: CriarUsuarioRequest;
+    try {
+      body = await request.json();
+    } catch {
+      return criarRespostaErro('Corpo da requisição inválido', 400);
+    }
 
-    if (usuarioExistente) {
-      return createErrorResponse(
-        ErrorCodes.CONFLICT,
-        'Email já está em uso'
+    // Validar dados usando Zod
+    const validacao = validarCriarUsuario(body);
+    if (!validacao.success) {
+      return criarRespostaErro(
+        `Dados inválidos: ${validacao.error.errors[0]?.message}`,
+        400
       );
     }
 
-    // Verificar se supervisor existe (se fornecido)
-    if (validatedData.supervisorId) {
-      const supervisor = await prisma.usuario.findUnique({
-        where: { id: validatedData.supervisorId },
-      });
+    // Criar usuário usando o serviço
+    const novoUsuario = await UsuarioService.criar(validacao.data, usuarioLogado);
 
-      if (!supervisor || supervisor.tipoUsuario !== 'SUPERVISOR') {
-        return createErrorResponse(
-          ErrorCodes.VALIDATION_ERROR,
-          'Supervisor inválido'
-        );
-      }
+    const response: MutarUsuarioResponse = {
+      usuario: novoUsuario,
+      message: 'Usuário criado com sucesso'
+    };
+
+    return criarRespostaSucesso(response, 201);
+  } catch (error) {
+    logError('Erro na API POST /usuarios', error);
+    
+    if (error instanceof Error && 'statusCode' in error) {
+      return criarRespostaErro(error.message, (error as any).statusCode);
     }
-
-    // Hash da senha
-    const senhaHash = await bcrypt.hash(validatedData.senha, 12);
-
-    // Criar usuário
-    const novoUsuario = await prisma.usuario.create({
-      data: {
-        nome: validatedData.nome,
-        email: validatedData.email,
-        senha: senhaHash,
-        tipoUsuario: validatedData.tipoUsuario,
-        supervisorId: validatedData.supervisorId,
-      },
-      select: {
-        id: true,
-        nome: true,
-        email: true,
-        tipoUsuario: true,
-        ativo: true,
-        criadoEm: true,
-        supervisorId: true,
-        supervisor: {
-          select: {
-            id: true,
-            nome: true,
-          },
-        },
-      },
-    });
-
-    return createSuccessResponse(
-      { usuario: novoUsuario },
-      'Usuário criado com sucesso',
-      201
-    );
-  }, 'criar usuário');
+    
+    return criarRespostaErro(MENSAGENS_ERRO_USUARIO.ERRO_INTERNO, 500);
+  }
 }

@@ -15,44 +15,9 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { useSonnerToast } from '@/hooks/use-sonner-toast';
-import { logError } from '@/lib/error-utils';
+import { useUsuarios } from '@/hooks/use-usuarios';
 import Link from 'next/link';
-
-interface Usuario {
-  id: string;
-  nome: string;
-  email: string;
-  tipoUsuario: 'ADMIN' | 'SUPERVISOR' | 'ATENDENTE' | 'CONSULTOR';
-  ativo: boolean;
-  criadoEm: string;
-  supervisorId?: string;
-  supervisor?: {
-    id: string;
-    nome: string;
-  };
-}
-
-interface FiltrosUsuario {
-  busca?: string;
-  tipoUsuario?: 'ADMIN' | 'SUPERVISOR' | 'ATENDENTE' | 'CONSULTOR';
-  ativo?: boolean;
-  supervisorId?: string;
-}
-
-interface OrdenacaoUsuario {
-  coluna: 'nome' | 'email' | 'tipoUsuario' | 'ativo' | 'criadoEm';
-  direcao: 'asc' | 'desc';
-}
-
-interface PaginacaoUsuarios {
-  paginaAtual: number;
-  totalPaginas: number;
-  totalItens: number;
-  itensPorPagina: number;
-  temProximaPagina: boolean;
-  temPaginaAnterior: boolean;
-}
+import type { Usuario, FiltrosUsuario, OrdenacaoUsuario, PaginacaoUsuarios } from '@/types/usuario';
 
 interface UsuariosWrapperProps {
   searchParams: {
@@ -171,80 +136,52 @@ function TabelaLoading() {
 export function UsuariosWrapper({ searchParams, podeCriar, podeEditar, podeDesativar }: UsuariosWrapperProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { showInfo, showError } = useSonnerToast();
   
   // Estados
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [filtros, setFiltros] = useState<FiltrosUsuario>(() => obterFiltrosIniciais(searchParams));
   const [ordenacao, setOrdenacao] = useState<OrdenacaoUsuario>(() => obterOrdenacaoInicial(searchParams));
   const [paginacao, setPaginacao] = useState<PaginacaoUsuarios>(() => obterPaginacaoInicial(searchParams));
-  const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState<string | null>(null);
+  
+  // Hook para gerenciar usuários
+  const {
+    usuarios,
+    carregando,
+    erro,
+    buscarUsuarios,
+    desativarUsuario,
+    ativarUsuario
+  } = useUsuarios();
 
   /**
-   * Buscar usuários da API
+   * Buscar usuários com parâmetros atualizados
    */
-  const buscarUsuarios = useCallback(async (
+  const buscarUsuariosAtualizado = useCallback(async (
     filtrosParam?: FiltrosUsuario,
     ordenacaoParam?: OrdenacaoUsuario,
     paginaAtual?: number,
     itensPorPagina?: number
   ) => {
-    try {
-      setCarregando(true);
-      setErro(null);
+    const filtrosAtivos = filtrosParam || filtros;
+    const ordenacaoAtiva = ordenacaoParam || ordenacao;
+    const paginaAtiva = paginaAtual || paginacao.paginaAtual;
+    const itensAtivos = itensPorPagina || paginacao.itensPorPagina;
 
-      const filtrosAtivos = filtrosParam || filtros;
-      const ordenacaoAtiva = ordenacaoParam || ordenacao;
-      const paginaAtiva = paginaAtual || paginacao.paginaAtual;
-      const itensAtivos = itensPorPagina || paginacao.itensPorPagina;
+    const parametros = {
+      busca: filtrosAtivos.busca,
+      tipoUsuario: filtrosAtivos.tipoUsuario,
+      ativo: filtrosAtivos.ativo,
+      supervisorId: filtrosAtivos.supervisorId,
+      pagina: paginaAtiva,
+      limite: itensAtivos,
+      coluna: ordenacaoAtiva.coluna,
+      direcao: ordenacaoAtiva.direcao
+    };
 
-      // Construir query string
-      const params = new URLSearchParams();
-      
-      if (filtrosAtivos.busca) {
-        params.append('search', filtrosAtivos.busca);
-      }
-      if (filtrosAtivos.tipoUsuario) {
-        params.append('tipoUsuario', filtrosAtivos.tipoUsuario);
-      }
-      if (filtrosAtivos.ativo !== undefined) {
-        params.append('ativo', filtrosAtivos.ativo.toString());
-      }
-      if (filtrosAtivos.supervisorId) {
-        params.append('supervisorId', filtrosAtivos.supervisorId);
-      }
-      
-      params.append('pagina', paginaAtiva.toString());
-      params.append('limite', itensAtivos.toString());
-      params.append('coluna', ordenacaoAtiva.coluna);
-      params.append('direcao', ordenacaoAtiva.direcao);
-
-      const response = await fetch(`/api/usuarios?${params.toString()}`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Erro ao buscar usuários');
-      }
-
-      setUsuarios(data.data || []);
-      setPaginacao(data.paginacao || {
-        paginaAtual: 1,
-        totalPaginas: 1,
-        totalItens: 0,
-        itensPorPagina: itensAtivos,
-        temProximaPagina: false,
-        temPaginaAnterior: false,
-      });
-
-    } catch (error) {
-      logError('Erro ao buscar usuários', error);
-      setErro(error instanceof Error ? error.message : 'Erro desconhecido');
-      showError('Erro ao carregar usuários');
-    } finally {
-      setCarregando(false);
+    const resultado = await buscarUsuarios(parametros);
+    if (resultado?.paginacao) {
+      setPaginacao(resultado.paginacao);
     }
-  }, [showError]);
+  }, [buscarUsuarios, filtros, ordenacao, paginacao]);
 
   /**
    * Atualizar URL com os parâmetros atuais
@@ -304,8 +241,8 @@ export function UsuariosWrapper({ searchParams, podeCriar, podeEditar, podeDesat
     const novaPagina = 1; // Reset para primeira página
     setPaginacao(prev => ({ ...prev, paginaAtual: novaPagina }));
     atualizarURL(filtrosConvertidos, undefined, novaPagina);
-    buscarUsuarios(filtrosConvertidos, undefined, novaPagina);
-  }, [atualizarURL, buscarUsuarios]);
+    buscarUsuariosAtualizado(filtrosConvertidos, undefined, novaPagina);
+  }, [atualizarURL, buscarUsuariosAtualizado]);
 
   /**
    * Limpar filtros
@@ -322,8 +259,8 @@ export function UsuariosWrapper({ searchParams, podeCriar, podeEditar, podeDesat
     const novaPagina = 1;
     setPaginacao(prev => ({ ...prev, paginaAtual: novaPagina }));
     atualizarURL(filtrosLimpos, undefined, novaPagina);
-    buscarUsuarios(filtrosLimpos, undefined, novaPagina);
-  }, [atualizarURL, buscarUsuarios]);
+    buscarUsuariosAtualizado(filtrosLimpos, undefined, novaPagina);
+  }, [atualizarURL, buscarUsuariosAtualizado]);
 
   /**
    * Manipular mudança de ordenação
@@ -331,8 +268,8 @@ export function UsuariosWrapper({ searchParams, podeCriar, podeEditar, podeDesat
   const handleOrdenacaoChange = useCallback((novaOrdenacao: OrdenacaoUsuario) => {
     setOrdenacao(novaOrdenacao);
     atualizarURL(undefined, novaOrdenacao);
-    buscarUsuarios(undefined, novaOrdenacao);
-  }, [atualizarURL, buscarUsuarios]);
+    buscarUsuariosAtualizado(undefined, novaOrdenacao);
+  }, [atualizarURL, buscarUsuariosAtualizado]);
 
   /**
    * Manipular mudança de página
@@ -340,8 +277,8 @@ export function UsuariosWrapper({ searchParams, podeCriar, podeEditar, podeDesat
   const handlePaginaChange = useCallback((novaPagina: number) => {
     setPaginacao(prev => ({ ...prev, paginaAtual: novaPagina }));
     atualizarURL(undefined, undefined, novaPagina);
-    buscarUsuarios(undefined, undefined, novaPagina);
-  }, [atualizarURL, buscarUsuarios]);
+    buscarUsuariosAtualizado(undefined, undefined, novaPagina);
+  }, [atualizarURL, buscarUsuariosAtualizado]);
 
   /**
    * Manipular mudança de itens por página
@@ -354,8 +291,8 @@ export function UsuariosWrapper({ searchParams, podeCriar, podeEditar, podeDesat
       paginaAtual: novaPagina 
     }));
     atualizarURL(undefined, undefined, novaPagina, novosItens);
-    buscarUsuarios(undefined, undefined, novaPagina, novosItens);
-  }, [atualizarURL, buscarUsuarios]);
+    buscarUsuariosAtualizado(undefined, undefined, novaPagina, novosItens);
+  }, [atualizarURL, buscarUsuariosAtualizado]);
 
   /**
    * Manipular ações da tabela
@@ -369,35 +306,17 @@ export function UsuariosWrapper({ searchParams, podeCriar, podeEditar, podeDesat
   }, [router]);
 
   const handleDesativar = useCallback(async (usuario: Usuario) => {
-    try {
-      const response = await fetch(`/api/usuarios/${usuario.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ativo: false }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Erro ao desativar usuário');
-      }
-
-      showInfo(`Usuário ${usuario.nome} foi desativado com sucesso`);
-      
-      // Recarregar dados
-      buscarUsuarios();
-    } catch (error) {
-      logError('Erro ao desativar usuário', error);
-      showError('Erro ao desativar usuário');
+    const sucesso = await desativarUsuario(usuario.id);
+    if (sucesso) {
+      // Recarregar dados após desativação
+      buscarUsuariosAtualizado();
     }
-  }, [showInfo, showError, buscarUsuarios]);
+  }, [desativarUsuario, buscarUsuariosAtualizado]);
 
   // Carregar dados iniciais
   useEffect(() => {
-    buscarUsuarios();
-  }, [buscarUsuarios]);
+    buscarUsuariosAtualizado();
+  }, [buscarUsuariosAtualizado]);
 
   // Renderizar erro se houver
   if (erro && !carregando) {
@@ -406,7 +325,7 @@ export function UsuariosWrapper({ searchParams, podeCriar, podeEditar, podeDesat
         <CardContent className="p-6">
           <div className="text-center">
             <p className="text-destructive mb-4">Erro ao carregar usuários: {erro}</p>
-            <Button onClick={() => buscarUsuarios()} variant="outline">
+            <Button onClick={() => buscarUsuariosAtualizado()} variant="outline">
               Tentar Novamente
             </Button>
           </div>

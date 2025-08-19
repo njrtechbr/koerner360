@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,33 +17,15 @@ import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { useSonnerToast } from '@/hooks/use-sonner-toast';
-import { getErrorMessage, logError } from '@/lib/error-utils';
+import { useUsuarios } from '@/hooks/use-usuarios';
 import { ModalBoasVindas } from '@/components/usuarios/modal-boas-vindas';
-
-// Schema removido - validação feita no backend
-
-type FormData = {
-  nome: string;
-  email: string;
-  senha?: string;
-  tipoUsuario: 'ADMIN' | 'SUPERVISOR' | 'ATENDENTE' | 'CONSULTOR';
-  ativo: boolean;
-  supervisorId?: string;
-};
-
-interface Usuario {
-  id: string;
-  nome: string;
-  email: string;
-  tipoUsuario: 'ADMIN' | 'SUPERVISOR' | 'ATENDENTE' | 'CONSULTOR';
-  ativo: boolean;
-  supervisorId?: string;
-}
-
-interface Supervisor {
-  id: string;
-  nome: string;
-}
+import {
+  type UsuarioFormData,
+  type Usuario,
+  type Supervisor,
+  usuarioFormSchema,
+  usuarioUpdateFormSchema
+} from '@/lib/validations/usuario';
 
 interface FormularioUsuarioProps {
   usuario?: Usuario | null;
@@ -51,11 +34,7 @@ interface FormularioUsuarioProps {
 }
 
 function FormularioUsuarioComponent({ usuario, onSalvar, onCancelar }: FormularioUsuarioProps) {
-  const [carregando, setCarregando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
-  const [supervisores, setSupervisores] = useState<Supervisor[]>([]);
   const [mostrarSenha, setMostrarSenha] = useState(false);
-  const [carregandoSupervisores, setCarregandoSupervisores] = useState(false);
   const [modalBoasVindas, setModalBoasVindas] = useState(false);
   const [dadosUsuarioCriado, setDadosUsuarioCriado] = useState<{
     nome: string;
@@ -65,16 +44,17 @@ function FormularioUsuarioComponent({ usuario, onSalvar, onCancelar }: Formulari
   const { showSuccess, showError } = useSonnerToast();
 
   const isEdicao = !!usuario;
+  const schema = isEdicao ? usuarioUpdateFormSchema : usuarioFormSchema;
 
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
     setValue,
     watch,
     reset,
-  } = useForm<FormData>({
-    // resolver: zodResolver(usuarioSchema), // Temporariamente removido devido a incompatibilidade de tipos
+  } = useForm<UsuarioFormData>({
+    resolver: zodResolver(schema),
     defaultValues: {
       nome: usuario?.nome || '',
       email: usuario?.email || '',
@@ -84,36 +64,23 @@ function FormularioUsuarioComponent({ usuario, onSalvar, onCancelar }: Formulari
     },
   });
 
+  const {
+    criarUsuario,
+    atualizarUsuario,
+    buscarSupervisores,
+    supervisores,
+    carregandoSupervisores,
+    erro
+  } = useUsuarios();
+
   const tipoUsuarioSelecionado = watch('tipoUsuario');
 
-  // Carregar supervisores
-  const carregarSupervisores = useCallback(async () => {
-    try {
-      setCarregandoSupervisores(true);
-      const response = await fetch('/api/usuarios?tipoUsuario=SUPERVISOR&ativo=true&limit=100');
-      const data = await response.json();
-
-      if (response.ok) {
-        const supervisores = data.data.usuarios || [];
-        setSupervisores(supervisores);
-        if (supervisores.length > 0) {
-          showSuccess(`${supervisores.length} supervisor(es) disponível(is)`);
-        } else {
-          showSuccess('Nenhum supervisor encontrado');
-        }
-      } else {
-        showError('Erro ao carregar supervisores');
-      }
-    } catch (error) {
-      logError('Erro ao carregar supervisores', error);
-    } finally {
-      setCarregandoSupervisores(false);
-    }
-  }, [showSuccess, showError]);
-
+  // Carregar supervisores quando necessário
   useEffect(() => {
-    carregarSupervisores();
-  }, [carregarSupervisores]);
+    if (tipoUsuarioSelecionado === 'ATENDENTE') {
+      buscarSupervisores();
+    }
+  }, [tipoUsuarioSelecionado, buscarSupervisores]);
 
   // Reset form quando usuario muda
   useEffect(() => {
@@ -129,76 +96,29 @@ function FormularioUsuarioComponent({ usuario, onSalvar, onCancelar }: Formulari
     }
   }, [usuario, reset, showSuccess]);
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (data: UsuarioFormData) => {
     try {
-      setCarregando(true);
-      setErro(null);
-
-      // Preparar dados para envio
-      const dadosEnvio: {
-        nome: string;
-        email: string;
-        tipoUsuario: string;
-        ativo: boolean;
-        senha?: string;
-        supervisorId?: string;
-      } = {
-        nome: data.nome,
-        email: data.email,
-        tipoUsuario: data.tipoUsuario,
-        ativo: data.ativo,
-      };
-
-      // Adicionar senha apenas se for criação ou se foi fornecida
-      if (!isEdicao && data.senha) {
-        dadosEnvio.senha = data.senha;
-      }
-
-      // Adicionar supervisor apenas se for atendente
-      if (data.tipoUsuario === 'ATENDENTE' && data.supervisorId) {
-        dadosEnvio.supervisorId = data.supervisorId;
-      }
-
-      const url = isEdicao ? `/api/usuarios/${usuario.id}` : '/api/usuarios';
-      const method = isEdicao ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dadosEnvio),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        const errorMessage = result.error || 'Erro ao salvar usuário';
-        showError(errorMessage);
-        throw new Error(errorMessage);
-      }
-
-      if (isEdicao) {
-        // Para edição, apenas mostrar notificação e fechar
+      if (isEdicao && usuario) {
+        // Atualizar usuário existente
+        await atualizarUsuario(usuario.id, data);
         showSuccess('Usuário atualizado com sucesso!');
         onSalvar();
       } else {
-        // Para criação, preparar dados para o modal de boas-vindas
+        // Criar novo usuário
+        const novoUsuario = await criarUsuario(data);
+        
+        // Preparar dados para o modal de boas-vindas
         setDadosUsuarioCriado({
           nome: data.nome,
           email: data.email,
-          senhaTemporaria: data.senha || 'senha_temporaria_123', // Fallback caso não tenha senha
+          senhaTemporaria: data.senha || 'senha_temporaria_123',
         });
         setModalBoasVindas(true);
         showSuccess('Usuário criado com sucesso!');
       }
     } catch (error) {
-        logError('Erro ao salvar usuário', error);
-        const errorMessage = getErrorMessage(error, 'Erro inesperado');
-        setErro(errorMessage);
-        showError(`Erro ao salvar usuário: ${errorMessage}`);
-      } finally {
-      setCarregando(false);
+      // Erro já tratado pelo hook useUsuarios
+      console.error('Erro ao salvar usuário:', error);
     }
   };
 
@@ -219,7 +139,7 @@ function FormularioUsuarioComponent({ usuario, onSalvar, onCancelar }: Formulari
             id="nome"
             {...register('nome')}
             placeholder="Nome completo"
-            disabled={carregando}
+            disabled={isSubmitting}
           />
           {errors.nome && (
             <p className="text-sm text-red-600">{errors.nome.message}</p>
@@ -234,7 +154,7 @@ function FormularioUsuarioComponent({ usuario, onSalvar, onCancelar }: Formulari
             type="email"
             {...register('email')}
             placeholder="email@exemplo.com"
-            disabled={carregando}
+            disabled={isSubmitting}
           />
           {errors.email && (
             <p className="text-sm text-red-600">{errors.email.message}</p>
@@ -252,7 +172,7 @@ function FormularioUsuarioComponent({ usuario, onSalvar, onCancelar }: Formulari
               type={mostrarSenha ? 'text' : 'password'}
               {...register('senha')}
               placeholder="Mínimo 6 caracteres"
-              disabled={carregando}
+              disabled={isSubmitting}
             />
             <Button
               type="button"
@@ -281,7 +201,7 @@ function FormularioUsuarioComponent({ usuario, onSalvar, onCancelar }: Formulari
           <Select
             value={watch('tipoUsuario')}
             onValueChange={(value) => setValue('tipoUsuario', value as 'ADMIN' | 'SUPERVISOR' | 'ATENDENTE')}
-            disabled={carregando}
+            disabled={isSubmitting}
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecione o tipo" />
@@ -304,7 +224,7 @@ function FormularioUsuarioComponent({ usuario, onSalvar, onCancelar }: Formulari
             <Select
               value={watch('supervisorId') || 'nenhum'}
               onValueChange={(value) => setValue('supervisorId', value === 'nenhum' ? undefined : value)}
-              disabled={carregando || carregandoSupervisores}
+              disabled={isSubmitting || carregandoSupervisores}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione um supervisor" />
@@ -332,7 +252,7 @@ function FormularioUsuarioComponent({ usuario, onSalvar, onCancelar }: Formulari
             id="ativo"
             checked={watch('ativo')}
             onCheckedChange={(checked) => setValue('ativo', checked)}
-            disabled={carregando}
+            disabled={isSubmitting}
           />
           <Label htmlFor="ativo">Usuário ativo</Label>
         </div>
@@ -344,12 +264,12 @@ function FormularioUsuarioComponent({ usuario, onSalvar, onCancelar }: Formulari
           type="button"
           variant="outline"
           onClick={onCancelar}
-          disabled={carregando}
+          disabled={isSubmitting}
         >
           Cancelar
         </Button>
-        <Button type="submit" disabled={carregando}>
-          {carregando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {isEdicao ? 'Atualizar' : 'Criar'} Usuário
         </Button>
       </div>

@@ -102,8 +102,7 @@ export class UsuariosService {
       ]);
 
       return this.criarResultadoPaginado(usuarios, total, paginacao);
-    } catch (error) {
-      console.error('Erro ao buscar usuários:', error);
+    } catch {
       throw new Error('Falha ao buscar usuários');
     }
   }
@@ -116,7 +115,7 @@ export class UsuariosService {
     userType: string,
     userId: string
   ) {
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     // Filtros baseados no tipo de usuário logado
     if (userType === 'SUPERVISOR') {
@@ -159,7 +158,7 @@ export class UsuariosService {
    * Cria resultado paginado
    */
   private static criarResultadoPaginado(
-    usuarios: any[],
+    usuarios: UsuarioCompleto[],
     total: number,
     paginacao: UsuarioPaginacao
   ): UsuariosResult {
@@ -197,7 +196,7 @@ export class UsuariosService {
   /**
    * Valida parâmetros de paginação
    */
-  static validarParametrosPaginacao(searchParams: any): UsuarioPaginacao {
+  static validarParametrosPaginacao(searchParams: Record<string, unknown>): UsuarioPaginacao {
     const page = Math.max(1, parseInt(searchParams.pagina || '1'));
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.limite || '10')));
     const ordenacao = ['nome', 'email', 'tipoUsuario', 'ativo', 'criadoEm'].includes(searchParams.ordenacao) 
@@ -211,7 +210,7 @@ export class UsuariosService {
   /**
    * Valida e sanitiza filtros
    */
-  static validarFiltros(searchParams: any): UsuarioFiltros {
+  static validarFiltros(searchParams: Record<string, unknown>): UsuarioFiltros {
     const filtros: UsuarioFiltros = {};
 
     if (searchParams.busca && typeof searchParams.busca === 'string') {
