@@ -6,9 +6,7 @@
 import { z } from 'zod';
 
 // Enum para tipos de usuário
-export const TipoUsuarioEnum = z.enum(['ADMIN', 'SUPERVISOR', 'ATENDENTE', 'CONSULTOR'], {
-  errorMap: () => ({ message: 'Tipo de usuário inválido' })
-});
+export const UserTypeEnum = z.enum(['ADMIN', 'SUPERVISOR', 'ATENDENTE', 'CONSULTOR']);
 
 // Schema base para usuário
 export const usuarioBaseSchema = z.object({
@@ -26,7 +24,7 @@ export const usuarioBaseSchema = z.object({
     .toLowerCase()
     .transform(val => val.trim()),
   
-  tipoUsuario: TipoUsuarioEnum,
+  userType: UserTypeEnum,
   
   ativo: z.boolean().default(true),
   
@@ -58,11 +56,11 @@ export const criarUsuarioSchema = usuarioBaseSchema.extend({
 ).refine(
   (data) => {
     // Supervisor deve ter supervisorId null
-    if (data.tipoUsuario === 'SUPERVISOR') {
+    if (data.userType === 'SUPERVISOR') {
       return !data.supervisorId;
     }
     // Atendente deve ter supervisorId
-    if (data.tipoUsuario === 'ATENDENTE') {
+    if (data.userType === 'ATENDENTE') {
       return !!data.supervisorId;
     }
     // Admin e Consultor não precisam de supervisor
@@ -108,10 +106,10 @@ export const atualizarUsuarioSchema = usuarioBaseSchema.extend({
 ).refine(
   (data) => {
     // Validação de supervisor baseada no tipo
-    if (data.tipoUsuario === 'SUPERVISOR') {
+    if (data.userType === 'SUPERVISOR') {
       return !data.supervisorId;
     }
-    if (data.tipoUsuario === 'ATENDENTE') {
+    if (data.userType === 'ATENDENTE') {
       return !!data.supervisorId;
     }
     return true;
@@ -125,19 +123,19 @@ export const atualizarUsuarioSchema = usuarioBaseSchema.extend({
 // Schema para filtros de usuário
 export const filtrosUsuarioSchema = z.object({
   busca: z.string().max(255).optional(),
-  tipoUsuario: TipoUsuarioEnum.optional(),
+  userType: UserTypeEnum.optional(),
   ativo: z.boolean().optional(),
   supervisorId: z.string().uuid().optional().nullable(),
   pagina: z.coerce.number().int().min(1).default(1),
   limite: z.coerce.number().int().min(1).max(100).default(10),
-  ordenacao: z.enum(['nome', 'email', 'tipoUsuario', 'ativo', 'criadoEm']).default('nome'),
+  ordenacao: z.enum(['nome', 'email', 'userType', 'ativo', 'criadoEm']).default('nome'),
   direcao: z.enum(['asc', 'desc']).default('asc')
 });
 
 // Schema para parâmetros de busca da URL
 export const searchParamsUsuarioSchema = z.object({
   search: z.string().optional(),
-  tipoUsuario: z.string().optional(),
+  userType: z.string().optional(),
   ativo: z.string().optional(),
   supervisorId: z.string().optional(),
   pagina: z.string().optional(),
@@ -147,7 +145,7 @@ export const searchParamsUsuarioSchema = z.object({
 }).transform((data) => {
   return {
     busca: data.search,
-    tipoUsuario: data.tipoUsuario as any,
+    userType: data.userType as any,
     ativo: data.ativo ? data.ativo === 'true' : undefined,
     supervisorId: data.supervisorId,
     pagina: data.pagina ? parseInt(data.pagina) : 1,
@@ -162,7 +160,7 @@ export const usuarioResponseSchema = z.object({
   id: z.string().uuid(),
   nome: z.string(),
   email: z.string().email(),
-  tipoUsuario: TipoUsuarioEnum,
+  userType: UserTypeEnum,
   ativo: z.boolean(),
   criadoEm: z.date(),
   atualizadoEm: z.date(),
@@ -178,14 +176,52 @@ export const usuarioResponseSchema = z.object({
   }).optional()
 });
 
+// Schema para resposta de mutação (criação/atualização/deleção)
+export const mutarUsuarioResponseSchema = z.object({
+  usuario: usuarioResponseSchema,
+  message: z.string(),
+});
+
+// Schema para estatísticas de usuários
+export const estatisticasUsuariosSchema = z.object({
+  total: z.number(),
+  ativos: z.number(),
+  inativos: z.number(),
+  porTipo: z.record(z.enum(UserTypeEnum.options), z.number()),
+});
+
+// Schema para supervisores disponíveis
+export const supervisorDisponivelSchema = z.object({
+  id: z.string(),
+  nome: z.string(),
+});
+
+// Schema para validação de e-mail único
+export const validacaoEmailUnicoSchema = z.object({
+  isUnico: z.boolean(),
+  usuarioId: z.string().optional().nullable(),
+});
+
+
 // Tipos TypeScript derivados dos schemas
-export type TipoUsuario = z.infer<typeof TipoUsuarioEnum>;
+export type UserType = z.infer<typeof UserTypeEnum>;
 export type UsuarioBase = z.infer<typeof usuarioBaseSchema>;
 export type CriarUsuarioData = z.infer<typeof criarUsuarioSchema>;
 export type AtualizarUsuarioData = z.infer<typeof atualizarUsuarioSchema>;
 export type FiltrosUsuario = z.infer<typeof filtrosUsuarioSchema>;
 export type SearchParamsUsuario = z.infer<typeof searchParamsUsuarioSchema>;
 export type UsuarioResponse = z.infer<typeof usuarioResponseSchema>;
+export type MutarUsuarioResponse = z.infer<typeof mutarUsuarioResponseSchema>;
+export type EstatisticasUsuarios = z.infer<typeof estatisticasUsuariosSchema>;
+export type SupervisorDisponivel = z.infer<typeof supervisorDisponivelSchema>;
+export type ValidacaoEmailUnico = z.infer<typeof validacaoEmailUnicoSchema>;
+
+// Alias de tipos para compatibilidade
+export type Usuario = UsuarioResponse;
+export type Supervisor = SupervisorDisponivel;
+export type ObterUsuarioResponse = UsuarioResponse;
+export type AtualizarUsuarioRequest = AtualizarUsuarioData;
+
 
 // Utilitários de validação
 export const validarCriarUsuario = (data: unknown) => {
@@ -206,31 +242,53 @@ export const validarSearchParamsUsuario = (data: unknown) => {
 
 // Constantes úteis
 export const TIPOS_USUARIO = ['ADMIN', 'SUPERVISOR', 'ATENDENTE', 'CONSULTOR'] as const;
-export const COLUNAS_ORDENACAO = ['nome', 'email', 'tipoUsuario', 'ativo', 'criadoEm'] as const;
+export const COLUNAS_ORDENACAO = ['nome', 'email', 'userType', 'ativo', 'criadoEm'] as const;
 export const DIRECOES_ORDENACAO = ['asc', 'desc'] as const;
+
+// Mensagens de erro padronizadas
+export const MENSAGENS_ERRO_USUARIO = {
+  NAO_AUTORIZADO: 'Usuário não autorizado.',
+  ERRO_INTERNO: 'Ocorreu um erro interno no servidor.',
+  USUARIO_NAO_ENCONTRADO: 'Usuário não encontrado.',
+  PERMISSAO_NEGADA: 'Permissão negada para executar esta ação.',
+  ID_INVALIDO: 'O ID do usuário é inválido.',
+  DADOS_INVALIDOS: 'Os dados fornecidos são inválidos.',
+  EMAIL_JA_EXISTE: 'O e-mail fornecido já está em uso.',
+  NOME_OBRIGATORIO: 'Nome é obrigatório',
+  NOME_MUITO_CURTO: 'Nome deve ter pelo menos 2 caracteres',
+  NOME_MUITO_LONGO: 'Nome deve ter no máximo 100 caracteres',
+  EMAIL_OBRIGATORIO: 'E-mail é obrigatório',
+  EMAIL_INVALIDO: 'E-mail inválido',
+  SENHA_OBRIGATORIA: 'Senha é obrigatória',
+  SENHA_MUITO_CURTA: 'Senha deve ter pelo menos 8 caracteres',
+  SENHAS_NAO_CONFEREM: 'As senhas não conferem',
+  TIPO_USUARIO_OBRIGATORIO: 'O tipo de usuário é obrigatório',
+  SUPERVISOR_INVALIDO: 'A configuração de supervisor é inválida para este tipo de usuário',
+} as const;
+
 
 // Validações de regras de negócio
 export const validarRegrasNegocio = {
-  podeGerenciarUsuario: (tipoUsuarioLogado: TipoUsuario, tipoUsuarioAlvo: TipoUsuario): boolean => {
-    if (tipoUsuarioLogado === 'ADMIN') return true;
-    if (tipoUsuarioLogado === 'SUPERVISOR') {
-      return ['ATENDENTE', 'CONSULTOR'].includes(tipoUsuarioAlvo);
+  podeGerenciarUsuario: (userTypeLogado: UserType, userTypeAlvo: UserType): boolean => {
+    if (userTypeLogado === 'ADMIN') return true;
+    if (userTypeLogado === 'SUPERVISOR') {
+      return ['ATENDENTE', 'CONSULTOR'].includes(userTypeAlvo);
     }
     return false;
   },
   
-  podeEditarUsuario: (tipoUsuarioLogado: TipoUsuario, tipoUsuarioAlvo: TipoUsuario): boolean => {
-    if (tipoUsuarioLogado === 'ADMIN') return true;
-    if (tipoUsuarioLogado === 'SUPERVISOR') {
-      return tipoUsuarioAlvo === 'ATENDENTE';
+  podeEditarUsuario: (userTypeLogado: UserType, userTypeAlvo: UserType): boolean => {
+    if (userTypeLogado === 'ADMIN') return true;
+    if (userTypeLogado === 'SUPERVISOR') {
+      return userTypeAlvo === 'ATENDENTE';
     }
     return false;
   },
   
-  podeDesativarUsuario: (tipoUsuarioLogado: TipoUsuario, tipoUsuarioAlvo: TipoUsuario): boolean => {
-    if (tipoUsuarioLogado === 'ADMIN') return true;
-    if (tipoUsuarioLogado === 'SUPERVISOR') {
-      return tipoUsuarioAlvo === 'ATENDENTE';
+  podeDesativarUsuario: (userTypeLogado: UserType, userTypeAlvo: UserType): boolean => {
+    if (userTypeLogado === 'ADMIN') return true;
+    if (userTypeLogado === 'SUPERVISOR') {
+      return userTypeAlvo === 'ATENDENTE';
     }
     return false;
   }

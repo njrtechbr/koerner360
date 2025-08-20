@@ -11,7 +11,7 @@ async function checkUsers() {
         id: true,
         nome: true,
         email: true,
-        tipoUsuario: true,
+        userType: true,
         ativo: true,
         criadoEm: true
       },
@@ -32,20 +32,20 @@ async function checkUsers() {
     
     usuarios.forEach((usuario, index) => {
       const statusIcon = usuario.ativo ? '🟢' : '🔴';
-      const tipoIcon = usuario.tipoUsuario === 'ADMIN' ? '👑' : 
-                       usuario.tipoUsuario === 'SUPERVISOR' ? '👨‍💼' : 
-                       usuario.tipoUsuario === 'ATENDENTE' ? '👤' : '❓';
+      const tipoIcon = usuario.userType === 'ADMIN' ? '👑' : 
+                       usuario.userType === 'SUPERVISOR' ? '👨‍💼' : 
+                       usuario.userType === 'ATENDENTE' ? '👤' : '❓';
       
       console.log(`\n${index + 1}. ${statusIcon} ${usuario.nome}`);
       console.log(`   📧 Email: ${usuario.email}`);
-      console.log(`   ${tipoIcon} Tipo: ${usuario.tipoUsuario}`);
+      console.log(`   ${tipoIcon} Tipo: ${usuario.userType}`);
       console.log(`   📅 Criado em: ${usuario.criadoEm.toLocaleString('pt-BR')}`);
     });
     
     // Contar por tipo
     const contadores: Record<string, number> = {};
     usuarios.forEach(user => {
-      contadores[user.tipoUsuario] = (contadores[user.tipoUsuario] || 0) + 1;
+      contadores[user.userType] = (contadores[user.userType] || 0) + 1;
     });
     
     console.log('\n📈 ESTATÍSTICAS:');

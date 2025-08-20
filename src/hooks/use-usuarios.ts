@@ -5,24 +5,23 @@
 
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import {
   type Usuario,
-  type CriarUsuarioRequest,
-  type AtualizarUsuarioRequest,
+  type CriarUsuarioData as CriarUsuarioRequest,
+  type AtualizarUsuarioData as AtualizarUsuarioRequest,
   type FiltrosUsuario,
   type OrdenacaoUsuario,
   type PaginacaoUsuario,
-  type UsuariosPaginados,
   type EstatisticasUsuarios,
   type SupervisorDisponivel,
-  type ListarUsuariosResponse,
+  type UsuarioResponse as ListarUsuariosResponse,
   type ObterUsuarioResponse,
   type MutarUsuarioResponse,
-  MENSAGENS_ERRO_USUARIO
-} from '@/types/usuario';
+  USER_ERROR_MESSAGES
+} from '@/lib/validations/usuario';
 import { logError } from '@/lib/error-utils';
 
 // Estado do hook
@@ -94,7 +93,7 @@ const estadoInicial: UseUsuariosState = {
   },
   filtros: {
     busca: '',
-    tipoUsuario: undefined,
+        userType: undefined,
     ativo: undefined,
     supervisorId: undefined
   },
@@ -109,12 +108,18 @@ const estadoInicial: UseUsuariosState = {
  */
 export function useUsuarios(config: UseUsuariosConfig = {}): UseUsuariosReturn {
   const { data: session } = useSession();
-  const [state, setState] = useState<UseUsuariosState>({
+  const [state, setState] = useState<UseUsuariosState>(() => ({
     ...estadoInicial,
     filtros: { ...estadoInicial.filtros, ...config.filtrosIniciais },
     ordenacao: { ...estadoInicial.ordenacao, ...config.ordenacaoInicial },
     paginacao: { ...estadoInicial.paginacao, ...config.paginacaoInicial }
-  });
+  }));
+
+  // Usar useRef para armazenar a referência mais recente do estado
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   // Função auxiliar para fazer requisições
   const fazerRequisicao = useCallback(async <T>(
@@ -131,14 +136,20 @@ export function useUsuarios(config: UseUsuariosConfig = {}): UseUsuariosReturn {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
+        let errorDetails = 'Erro desconhecido na requisição.';
+        try {
+          const errorData = await response.json();
+          errorDetails = errorData.error || JSON.stringify(errorData);
+        } catch (jsonError) {
+          errorDetails = `Erro HTTP: ${response.status} - Não foi possível parsear a resposta de erro.`;
+        }
+        throw new Error(errorDetails);
       }
 
       const data = await response.json();
       
       if (!data.success) {
-        throw new Error(data.error || 'Erro na resposta da API');
+        throw new Error(data.error || 'Resposta da API indica falha sem mensagem de erro.');
       }
 
       return data.data || data;
@@ -158,15 +169,20 @@ export function useUsuarios(config: UseUsuariosConfig = {}): UseUsuariosReturn {
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      const filtrosAtivos = { ...state.filtros, ...params?.filtros };
-      const ordenacaoAtiva = { ...state.ordenacao, ...params?.ordenacao };
-      const paginacaoAtiva = { ...state.paginacao, ...params?.paginacao };
+      // Acessar o estado mais recente via stateRef.current
+      const currentFiltros = stateRef.current.filtros;
+      const currentOrdenacao = stateRef.current.ordenacao;
+      const currentPaginacao = stateRef.current.paginacao;
+
+      const filtrosAtivos = { ...currentFiltros, ...params?.filtros };
+      const ordenacaoAtiva = { ...currentOrdenacao, ...params?.ordenacao };
+      const paginacaoAtiva = { ...currentPaginacao, ...params?.paginacao };
 
       const searchParams = new URLSearchParams();
       
       // Adicionar filtros
       if (filtrosAtivos.busca) searchParams.set('busca', filtrosAtivos.busca);
-      if (filtrosAtivos.tipoUsuario) searchParams.set('tipoUsuario', filtrosAtivos.tipoUsuario);
+      if (filtrosAtivos.userType) searchParams.set('userType', filtrosAtivos.userType);
       if (filtrosAtivos.ativo !== undefined) searchParams.set('ativo', String(filtrosAtivos.ativo));
       if (filtrosAtivos.supervisorId) searchParams.set('supervisorId', filtrosAtivos.supervisorId);
       
@@ -187,8 +203,6 @@ export function useUsuarios(config: UseUsuariosConfig = {}): UseUsuariosReturn {
           ...prev,
           usuarios: response.usuarios,
           paginacao: response.paginacao,
-          filtros: filtrosAtivos,
-          ordenacao: ordenacaoAtiva,
           loading: false
         }));
       } else {
@@ -199,15 +213,18 @@ export function useUsuarios(config: UseUsuariosConfig = {}): UseUsuariosReturn {
       setState(prev => ({
         ...prev,
         loading: false,
-        error: error instanceof Error ? error.message : MENSAGENS_ERRO_USUARIO.ERRO_INTERNO
+        error: error instanceof Error ? error.message : USER_ERROR_MESSAGES.ERRO_INTERNO
       }));
     }
-  }, [state.filtros, state.ordenacao, state.paginacao, fazerRequisicao]);
+  }, [fazerRequisicao]);
 
   // Recarregar usuários
   const recarregarUsuarios = useCallback(async () => {
+    // Chamar buscarUsuarios sem argumentos, pois ela acessará o estado mais recente via stateRef
     await buscarUsuarios();
   }, [buscarUsuarios]);
+
+  // ... (outras funções useCallback)
 
   // Buscar usuário por ID
   const buscarUsuario = useCallback(async (id: string): Promise<Usuario | null> => {
@@ -232,7 +249,7 @@ export function useUsuarios(config: UseUsuariosConfig = {}): UseUsuariosReturn {
       setState(prev => ({
         ...prev,
         loading: false,
-        error: error instanceof Error ? error.message : MENSAGENS_ERRO_USUARIO.ERRO_INTERNO
+        error: error instanceof Error ? error.message : USER_ERROR_MESSAGES.ERRO_INTERNO
       }));
       return null;
     }
@@ -259,7 +276,7 @@ export function useUsuarios(config: UseUsuariosConfig = {}): UseUsuariosReturn {
       return null;
     } catch (error) {
       logError('Erro ao criar usuário', error);
-      const errorMessage = error instanceof Error ? error.message : MENSAGENS_ERRO_USUARIO.ERRO_INTERNO;
+      const errorMessage = error instanceof Error ? error.message : USER_ERROR_MESSAGES.ERRO_INTERNO;
       setState(prev => ({ ...prev, loading: false, error: errorMessage }));
       toast.error(errorMessage);
       return null;
@@ -287,7 +304,7 @@ export function useUsuarios(config: UseUsuariosConfig = {}): UseUsuariosReturn {
       return null;
     } catch (error) {
       logError('Erro ao atualizar usuário', error);
-      const errorMessage = error instanceof Error ? error.message : MENSAGENS_ERRO_USUARIO.ERRO_INTERNO;
+      const errorMessage = error instanceof Error ? error.message : USER_ERROR_MESSAGES.ERRO_INTERNO;
       setState(prev => ({ ...prev, loading: false, error: errorMessage }));
       toast.error(errorMessage);
       return null;
@@ -314,7 +331,7 @@ export function useUsuarios(config: UseUsuariosConfig = {}): UseUsuariosReturn {
       return false;
     } catch (error) {
       logError('Erro ao desativar usuário', error);
-      const errorMessage = error instanceof Error ? error.message : MENSAGENS_ERRO_USUARIO.ERRO_INTERNO;
+      const errorMessage = error instanceof Error ? error.message : USER_ERROR_MESSAGES.ERRO_INTERNO;
       setState(prev => ({ ...prev, loading: false, error: errorMessage }));
       toast.error(errorMessage);
       return false;
@@ -341,7 +358,7 @@ export function useUsuarios(config: UseUsuariosConfig = {}): UseUsuariosReturn {
       return false;
     } catch (error) {
       logError('Erro ao ativar usuário', error);
-      const errorMessage = error instanceof Error ? error.message : MENSAGENS_ERRO_USUARIO.ERRO_INTERNO;
+      const errorMessage = error instanceof Error ? error.message : USER_ERROR_MESSAGES.ERRO_INTERNO;
       setState(prev => ({ ...prev, loading: false, error: errorMessage }));
       toast.error(errorMessage);
       return false;
@@ -429,12 +446,14 @@ export function useUsuarios(config: UseUsuariosConfig = {}): UseUsuariosReturn {
     setState(prev => ({ ...prev, error: null }));
   }, []);
 
+  
+
   // Auto-load inicial
   useEffect(() => {
     if (config.autoLoad !== false && session) {
-      buscarUsuarios();
+      recarregarUsuarios();
     }
-  }, [session, config.autoLoad]); // Removido buscarUsuarios das dependências para evitar loop
+  }, [session, config.autoLoad, recarregarUsuarios]);
 
   return {
     ...state,
@@ -514,12 +533,12 @@ export function usePermissoesUsuario() {
   const { data: session } = useSession();
   
   const permissoes = {
-    podeGerenciarUsuarios: session?.user?.tipoUsuario === 'ADMIN',
-    podeGerenciarAtendentes: ['ADMIN', 'SUPERVISOR'].includes(session?.user?.tipoUsuario || ''),
-    podeCriarUsuarios: session?.user?.tipoUsuario === 'ADMIN',
-    podeEditarUsuarios: ['ADMIN', 'SUPERVISOR'].includes(session?.user?.tipoUsuario || ''),
-    podeDesativarUsuarios: ['ADMIN', 'SUPERVISOR'].includes(session?.user?.tipoUsuario || ''),
-    podeVerEstatisticas: ['ADMIN', 'SUPERVISOR'].includes(session?.user?.tipoUsuario || '')
+    podeGerenciarUsuarios: session?.user?.userType === 'ADMIN',
+    podeGerenciarAtendentes: ['ADMIN', 'SUPERVISOR'].includes(session?.user?.userType || ''),
+    podeCriarUsuarios: session?.user?.userType === 'ADMIN',
+    podeEditarUsuarios: ['ADMIN', 'SUPERVISOR'].includes(session?.user?.userType || ''),
+    podeDesativarUsuarios: ['ADMIN', 'SUPERVISOR'].includes(session?.user?.userType || ''),
+    podeVerEstatisticas: ['ADMIN', 'SUPERVISOR'].includes(session?.user?.userType || '')
   };
 
   return permissoes;

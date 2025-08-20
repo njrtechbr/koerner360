@@ -20,7 +20,7 @@ async function verificarAtendentes() {
     // Buscar usuários atendentes
     const usuariosAtendentes = await prisma.usuario.findMany({
       where: {
-        tipoUsuario: 'ATENDENTE'
+        userType: 'ATENDENTE'
       }
     });
 
@@ -71,7 +71,7 @@ async function verificarAtendentes() {
     atendentes.forEach((atendente, index) => {
       const numeroAvaliacoes = avaliacoes.filter(av => av.atendenteId === atendente.id).length;
       const usuario = usuariosAtendentes.find(u => u.id === atendente.usuarioId);
-      const tipoUsuario = usuario ? `(${(usuario as any).tipoUsuario})` : '(Sem usuário)';
+      const userType = usuario ? `(${(usuario as any).userType})` : '(Sem usuário)';
       const statusIcon = atendente.status === 'ATIVO' ? '🟢' : '🔴';
       
       console.log(`${index + 1}. ${statusIcon} ${atendente.nome}`);
@@ -79,7 +79,7 @@ async function verificarAtendentes() {
       console.log(`   🏢 Setor: ${atendente.setor} | Cargo: ${atendente.cargo}`);
       console.log(`   📱 Telefone: ${atendente.telefone}`);
       console.log(`   🚪 Portaria: ${atendente.portaria}`);
-      console.log(`   👤 Tipo: ${tipoUsuario}`);
+      console.log(`   👤 Tipo: ${userType}`);
       console.log(`   ⭐ Avaliações: ${numeroAvaliacoes}`);
       console.log(`   📅 Admissão: ${atendente.dataAdmissao.toLocaleDateString('pt-BR')}`);
       console.log('');

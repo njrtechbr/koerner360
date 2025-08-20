@@ -15,7 +15,7 @@ async function verificarBancoDados() {
     console.log(`👤 Total de usuários: ${totalUsuarios}`);
     
     const usuariosPorTipo = await prisma.usuario.groupBy({
-      by: ['tipoUsuario'],
+      by: ['userType'],
       _count: {
         id: true
       }
@@ -23,7 +23,7 @@ async function verificarBancoDados() {
     
     console.log('📊 Usuários por tipo:');
     usuariosPorTipo.forEach(grupo => {
-      console.log(`   ${grupo.tipoUsuario}: ${grupo._count.id}`);
+      console.log(`   ${grupo.userType}: ${grupo._count.id}`);
     });
     
     // Verificar tabela de atendentes
@@ -41,7 +41,7 @@ async function verificarBancoDados() {
     // Verificar relacionamentos
     const usuariosComAtendentes = await prisma.usuario.findMany({
       where: {
-        tipoUsuario: 'ATENDENTE'
+        userType: 'ATENDENTE'
       },
       include: {
         atendente: true
@@ -54,7 +54,7 @@ async function verificarBancoDados() {
     // Verificar dados específicos
     const adminUser = await prisma.usuario.findFirst({
       where: {
-        tipoUsuario: 'ADMIN'
+        userType: 'ADMIN'
       }
     });
     
@@ -64,7 +64,7 @@ async function verificarBancoDados() {
     
     const supervisorUser = await prisma.usuario.findFirst({
       where: {
-        tipoUsuario: 'SUPERVISOR'
+        userType: 'SUPERVISOR'
       }
     });
     

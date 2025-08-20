@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 async function listUsuarios() {
   try {
     const usuarios = await prisma.$queryRaw`
-      SELECT id, nome, email, "tipoUsuario", ativo 
+      SELECT id, nome, email, "userType", ativo 
       FROM usuarios 
       WHERE ativo = true
       LIMIT 5;

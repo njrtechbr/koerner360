@@ -1,71 +1,41 @@
 'use client';
 
-import { useState, useEffect, useCallback, memo } from 'react';
+import { memo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, User, Mail, Shield, Calendar, UserCheck } from 'lucide-react';
+import { User, Mail, Shield, Calendar, UserCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { logError } from '@/lib/error-utils';
 
+// Tipagem do usuário que vem da API (semelhante ao schema do Prisma)
 interface Usuario {
   id: string;
   nome: string;
   email: string;
   tipoUsuario: 'ADMIN' | 'SUPERVISOR' | 'ATENDENTE';
   ativo: boolean;
-  criadoEm: string;
-  atualizadoEm: string;
-  supervisorId?: string;
+  criadoEm: Date | string;
+  atualizadoEm: Date | string;
+  supervisorId?: string | null;
   supervisor?: {
     id: string;
     nome: string;
-  };
+  } | null;
   _count?: {
     supervisoes?: number;
-
   };
 }
 
 interface DetalhesUsuarioProps {
-  usuarioId: string;
+  usuario: Usuario | null;
   onEditar: () => void;
   onFechar: () => void;
 }
 
-function DetalhesUsuarioComponent({ usuarioId, onEditar, onFechar }: DetalhesUsuarioProps) {
-  const [usuario, setUsuario] = useState<Usuario | null>(null);
-  const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState<string | null>(null);
-
-  const carregarUsuario = useCallback(async () => {
-    try {
-      setCarregando(true);
-      setErro(null);
-
-      const response = await fetch(`/api/usuarios/${usuarioId}`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error?.message || 'Erro ao carregar usuário');
-      }
-
-      setUsuario(data.data.usuario);
-    } catch (error) {
-      logError('Erro ao carregar usuário', error);
-      setErro(error instanceof Error ? error.message : 'Erro desconhecido');
-    } finally {
-      setCarregando(false);
-    }
-  }, [usuarioId]);
-
-  useEffect(() => {
-    carregarUsuario();
-  }, [carregarUsuario]);
-
+function DetalhesUsuarioComponent({ usuario, onEditar, onFechar }: DetalhesUsuarioProps) {
   const getTipoUsuarioLabel = (tipo: string) => {
     switch (tipo) {
       case 'ADMIN':
@@ -92,35 +62,11 @@ function DetalhesUsuarioComponent({ usuarioId, onEditar, onFechar }: DetalhesUsu
     }
   };
 
-  const formatarData = (data: string) => {
+  const formatarData = (data: Date | string) => {
     return format(new Date(data), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", {
       locale: ptBR,
     });
   };
-
-  if (carregando) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Carregando detalhes do usuário...</span>
-      </div>
-    );
-  }
-
-  if (erro) {
-    return (
-      <div className="p-6">
-        <Alert variant="destructive">
-          <AlertDescription>{erro}</AlertDescription>
-        </Alert>
-        <div className="flex justify-end mt-4">
-          <Button variant="outline" onClick={onFechar}>
-            Fechar
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   if (!usuario) {
     return (

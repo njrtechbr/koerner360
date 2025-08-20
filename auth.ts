@@ -26,11 +26,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             nome: string;
             email: string;
             senha: string;
-            tipoUsuario: string;
+            userType: string;
             ativo: boolean;
             supervisorId: string | null;
           }>>`
-            SELECT id, nome, email, senha, "tipoUsuario", ativo, "supervisorId"
+            SELECT id, nome, email, senha, "tipoUsuario" as "userType", ativo, "supervisorId"
             FROM usuarios 
             WHERE email = ${email} AND ativo = true
             LIMIT 1
@@ -59,7 +59,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             id: user.id,
             name: user.nome,
             email: user.email,
-            userType: user.tipoUsuario,
+            userType: user.userType,
             supervisorId: user.supervisorId || null
           };
         } catch (error) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -127,10 +127,10 @@ export default function AdminChangelogPage() {
     }
   }, [session, carregarChangelogs]);
 
-    async function carregarChangelogs() {
-     try {
-       setLoading(true);
-       const response = await fetch('/api/changelog');
+    const carregarChangelogs = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/changelog');
       
       if (!response.ok) {
         throw new Error('Erro ao carregar changelogs');
@@ -144,7 +144,7 @@ export default function AdminChangelogPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [setChangelogs, setLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

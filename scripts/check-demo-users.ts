@@ -14,7 +14,7 @@ async function checkDemoUsers() {
         id: true,
         nome: true,
         email: true,
-        tipoUsuario: true,
+        userType: true,
         ativo: true
       }
     });
@@ -22,7 +22,7 @@ async function checkDemoUsers() {
     console.log('👥 Usuários de demonstração encontrados:', demoUsers.length);
     
     demoUsers.forEach((user, index) => {
-      console.log(`  ${index + 1}. ${user.nome} (${user.email}) - ${user.tipoUsuario} - ${user.ativo ? 'Ativo' : 'Inativo'}`);
+      console.log(`  ${index + 1}. ${user.nome} (${user.email}) - ${user.userType} - ${user.ativo ? 'Ativo' : 'Inativo'}`);
     });
     
     if (demoUsers.length === 0) {

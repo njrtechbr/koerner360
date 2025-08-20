@@ -20,11 +20,12 @@ import { useSonnerToast } from '@/hooks/use-sonner-toast';
 import { useUsuarios } from '@/hooks/use-usuarios';
 import { ModalBoasVindas } from '@/components/usuarios/modal-boas-vindas';
 import {
-  type UsuarioFormData,
+  type CriarUsuarioData,
+  type AtualizarUsuarioData,
   type Usuario,
   type Supervisor,
-  usuarioFormSchema,
-  usuarioUpdateFormSchema
+  criarUsuarioSchema,
+  atualizarUsuarioSchema
 } from '@/lib/validations/usuario';
 
 interface FormularioUsuarioProps {
@@ -44,7 +45,7 @@ function FormularioUsuarioComponent({ usuario, onSalvar, onCancelar }: Formulari
   const { showSuccess, showError } = useSonnerToast();
 
   const isEdicao = !!usuario;
-  const schema = isEdicao ? usuarioUpdateFormSchema : usuarioFormSchema;
+  const schema = isEdicao ? atualizarUsuarioSchema : criarUsuarioSchema;
 
   const {
     register,
@@ -53,7 +54,7 @@ function FormularioUsuarioComponent({ usuario, onSalvar, onCancelar }: Formulari
     setValue,
     watch,
     reset,
-  } = useForm<UsuarioFormData>({
+  } = useForm<any>({
     resolver: zodResolver(schema),
     defaultValues: {
       nome: usuario?.nome || '',
@@ -96,7 +97,7 @@ function FormularioUsuarioComponent({ usuario, onSalvar, onCancelar }: Formulari
     }
   }, [usuario, reset, showSuccess]);
 
-  const onSubmit = async (data: UsuarioFormData) => {
+  const onSubmit = async (data: any) => {
     try {
       if (isEdicao && usuario) {
         // Atualizar usuário existente

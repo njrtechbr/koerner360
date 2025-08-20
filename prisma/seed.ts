@@ -23,7 +23,7 @@ async function main() {
       email: 'admin@koerner360.com',
       nome: 'Administrador',
       senha: senhaHashAdmin,
-      tipoUsuario: 'ADMIN',
+      userType: 'ADMIN',
     },
   });
 
@@ -32,7 +32,7 @@ async function main() {
       email: 'supervisor@koerner360.com',
       nome: 'João Supervisor',
       senha: senhaHashSupervisor,
-      tipoUsuario: 'SUPERVISOR',
+      userType: 'SUPERVISOR',
     },
   });
 
@@ -41,7 +41,7 @@ async function main() {
       email: 'maria.silva@koerner360.com',
       nome: 'Maria Silva',
       senha: senhaHashAtendente,
-      tipoUsuario: 'ATENDENTE',
+      userType: 'ATENDENTE',
       supervisorId: supervisor.id,
     },
   });
@@ -51,7 +51,7 @@ async function main() {
       email: 'carlos.santos@koerner360.com',
       nome: 'Carlos Santos',
       senha: senhaHashAtendente,
-      tipoUsuario: 'ATENDENTE',
+      userType: 'ATENDENTE',
       supervisorId: supervisor.id,
     },
   });
@@ -61,7 +61,7 @@ async function main() {
       email: 'ana.costa@koerner360.com',
       nome: 'Ana Costa',
       senha: senhaHashAtendente,
-      tipoUsuario: 'ATENDENTE',
+      userType: 'ATENDENTE',
       supervisorId: supervisor.id,
     },
   });

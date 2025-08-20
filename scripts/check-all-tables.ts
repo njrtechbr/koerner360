@@ -13,7 +13,7 @@ async function checkAllTables() {
         id: true,
         nome: true,
         email: true,
-        tipoUsuario: true,
+        userType: true,
         ativo: true,
         criadoEm: true
       }
@@ -22,7 +22,7 @@ async function checkAllTables() {
     if (usuarios.length > 0) {
       console.log('   📋 Primeiros 3 registros:')
       usuarios.slice(0, 3).forEach((user, index) => {
-        console.log(`     ${index + 1}. ${user.nome} (${user.email}) - ${user.tipoUsuario} - ${user.ativo ? 'Ativo' : 'Inativo'}`)
+        console.log(`     ${index + 1}. ${user.nome} (${user.email}) - ${user.userType} - ${user.ativo ? 'Ativo' : 'Inativo'}`)
       })
     }
     console.log()
@@ -106,7 +106,7 @@ async function checkAllTables() {
     
     // Verificar estatísticas por tipo de usuário
     const estatisticasUsuarios = await prisma.usuario.groupBy({
-      by: ['tipoUsuario'],
+      by: ['userType'],
       _count: {
         id: true
       }
@@ -114,9 +114,9 @@ async function checkAllTables() {
     
     console.log('👥 ESTATÍSTICAS POR TIPO DE USUÁRIO:')
     estatisticasUsuarios.forEach(stat => {
-      const emoji = stat.tipoUsuario === 'ADMIN' ? '👑' : 
-                   stat.tipoUsuario === 'SUPERVISOR' ? '👨‍💼' : '👥'
-      console.log(`   ${emoji} ${stat.tipoUsuario}: ${stat._count.id}`)
+      const emoji = stat.userType === 'ADMIN' ? '👑' : 
+                   stat.userType === 'SUPERVISOR' ? '👨‍💼' : '👥'
+      console.log(`   ${emoji} ${stat.userType}: ${stat._count.id}`)
     })
     
     console.log('\n✅ Verificação completa! Todas as tabelas do Supabase foram migradas com sucesso.')

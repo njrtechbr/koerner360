@@ -39,7 +39,7 @@ async function migrateCompleteData() {
         nome: user.name,
         email: user.email,
         senha: user.password, // Senha já está hasheada
-        tipoUsuario: user.accessType === 'admin' ? 'ADMIN' : user.accessType === 'supervisor' ? 'SUPERVISOR' : 'ATENDENTE' as 'ADMIN' | 'SUPERVISOR' | 'ATENDENTE',
+        userType: user.accessType === 'admin' ? 'ADMIN' : user.accessType === 'supervisor' ? 'SUPERVISOR' : 'ATENDENTE' as 'ADMIN' | 'SUPERVISOR' | 'ATENDENTE',
         ativo: user.status === 'ativo',
         criadoEm: new Date(user.createdAt),
         atualizadoEm: new Date(user.updatedAt),
@@ -64,7 +64,7 @@ async function migrateCompleteData() {
     }
 
     const avaliacoesMigradas = [];
-    const adminUser = usuariosMigrados.find(u => u.tipoUsuario === 'ADMIN') || usuariosMigrados[0];
+    const adminUser = usuariosMigrados.find(u => u.userType === 'ADMIN') || usuariosMigrados[0];
     
     if (!adminUser) {
       throw new Error('Nenhum usuário encontrado para ser usado como avaliador padrão');
@@ -120,8 +120,8 @@ async function migrateCompleteData() {
       tipo: 'MELHORIA' as const,
       prioridade: 'ALTA' as const,
       status: 'RESOLVIDO' as const,
-      receptorId: usuariosMigrados.find(u => u.tipoUsuario === 'ADMIN')?.id || usuariosMigrados[0]?.id || 'default-admin',
-      remetenteId: usuariosMigrados.find(u => u.tipoUsuario === 'ADMIN')?.id || usuariosMigrados[0]?.id || 'default-admin',
+      receptorId: usuariosMigrados.find(u => u.userType === 'ADMIN')?.id || usuariosMigrados[0]?.id || 'default-admin',
+      remetenteId: usuariosMigrados.find(u => u.userType === 'ADMIN')?.id || usuariosMigrados[0]?.id || 'default-admin',
     };
 
     const feedbackMigrado = await prisma.feedback.create({
@@ -139,7 +139,7 @@ async function migrateCompleteData() {
 
     // Estatísticas por tipo de usuário
     const estatisticasUsuarios = usuariosMigrados.reduce((acc, usuario) => {
-      acc[usuario.tipoUsuario] = (acc[usuario.tipoUsuario] || 0) + 1;
+      acc[usuario.userType] = (acc[usuario.userType] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 

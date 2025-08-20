@@ -748,19 +748,19 @@ async function migrateData() {
     console.log('👥 Migrando usuários...');
     for (const user of supabaseUsers) {
       // Mapear roles do Supabase para o enum do Prisma
-      let tipoUsuario: 'ADMIN' | 'SUPERVISOR' | 'ATENDENTE';
+      let userType: 'ADMIN' | 'SUPERVISOR' | 'ATENDENTE';
       switch (user.role) {
         case 'admin':
-          tipoUsuario = 'ADMIN';
+          userType = 'ADMIN';
           break;
         case 'supervisor':
-          tipoUsuario = 'SUPERVISOR';
+          userType = 'SUPERVISOR';
           break;
         case 'attendant':
-          tipoUsuario = 'ATENDENTE';
+          userType = 'ATENDENTE';
           break;
         default:
-          tipoUsuario = 'ATENDENTE';
+          userType = 'ATENDENTE';
       }
 
       await prisma.usuario.create({
@@ -769,7 +769,7 @@ async function migrateData() {
           nome: user.name,
           email: user.email,
           senha: user.password,
-          tipoUsuario: tipoUsuario,
+          userType: userType,
           ativo: user.status === 'active',
           criadoEm: new Date(user.createdAt),
           atualizadoEm: new Date(user.updatedAt)
@@ -849,9 +849,9 @@ async function migrateData() {
     console.log(`💬 Feedbacks: ${totalFeedbackCount}`);
 
     // Mostrar estatísticas por tipo de usuário
-    const adminCount = await prisma.usuario.count({ where: { tipoUsuario: 'ADMIN' } });
-    const supervisorCount = await prisma.usuario.count({ where: { tipoUsuario: 'SUPERVISOR' } });
-    const atendenteCount = await prisma.usuario.count({ where: { tipoUsuario: 'ATENDENTE' } });
+    const adminCount = await prisma.usuario.count({ where: { userType: 'ADMIN' } });
+    const supervisorCount = await prisma.usuario.count({ where: { userType: 'SUPERVISOR' } });
+    const atendenteCount = await prisma.usuario.count({ where: { userType: 'ATENDENTE' } });
 
     console.log(`\n📈 Estatísticas por tipo:`);
     console.log(`👑 Administradores: ${adminCount}`);

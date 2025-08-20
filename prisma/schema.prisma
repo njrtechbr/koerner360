@@ -12,7 +12,7 @@ model Usuario {
   email               String      @unique
   nome                String
   senha               String
-  tipoUsuario         TipoUsuario
+  userType         UserType
   ativo               Boolean     @default(true)
   senhaTemporaria     Boolean     @default(false)
   criadoEm            DateTime    @default(now())
@@ -93,7 +93,7 @@ model Feedback {
   @@map("feedbacks")
 }
 
-enum TipoUsuario {
+enum UserType {
   ADMIN
   SUPERVISOR
   ATENDENTE

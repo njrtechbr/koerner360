@@ -25,14 +25,14 @@ async function testConnection() {
         id: true,
         nome: true,
         email: true,
-        tipoUsuario: true,
+        userType: true,
         ativo: true
       }
     })
     
     console.log('\n📋 Usuários cadastrados:')
     users.forEach(user => {
-      console.log(`  - ${user.nome} (${user.email}) - ${user.tipoUsuario} - ${user.ativo ? 'Ativo' : 'Inativo'}`)
+      console.log(`  - ${user.nome} (${user.email}) - ${user.userType} - ${user.ativo ? 'Ativo' : 'Inativo'}`)
     })
     
     // Contar avaliações

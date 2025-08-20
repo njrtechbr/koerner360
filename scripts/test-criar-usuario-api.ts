@@ -64,7 +64,7 @@ async function testarCriarUsuarioAPI() {
           id: true,
           nome: true,
           email: true,
-          tipoUsuario: true,
+          userType: true,
           ativo: true,
           senhaTemporaria: true
         }

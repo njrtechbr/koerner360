@@ -17,13 +17,13 @@ async function testDatabase() {
     // Teste de consulta específica
     const admin = await prisma.usuario.findFirst({
       where: {
-        tipoUsuario: 'ADMIN'
+        userType: 'ADMIN'
       },
       select: {
         id: true,
         nome: true,
         email: true,
-        tipoUsuario: true
+        userType: true
       }
     });
     
