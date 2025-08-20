@@ -1,187 +1,224 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { UsuarioService } from '@/lib/services/usuario-service';
+import { prisma } from '@/lib/prisma';
+import { ApiResponseUtils } from '@/lib/utils/api-response';
+import { createPaginatedResponse } from '@/lib/utils/api-response'; // Adicionando importação
 import {
   validarCriarUsuario,
   validarFiltrosUsuario,
-  type TipoUsuario
+  validarRegrasNegocio,
+  USER_ERROR_MESSAGES,
+  type CriarUsuarioData,
+  type FiltrosUsuario,
+  type UsuarioResponse
 } from '@/lib/validations/usuario';
-import {
-  type CriarUsuarioRequest,
-  type BuscarUsuariosParams,
-  type ListarUsuariosResponse,
-  type MutarUsuarioResponse,
-  MENSAGENS_ERRO_USUARIO
-} from '@/types/usuario';
 import { logError } from '@/lib/error-utils';
+import { hashSenha } from '@/lib/auth-utils';
+import { NextRequest } from 'next/server';
 
-// Função auxiliar para criar resposta de erro
-function criarRespostaErro(message: string, status: number = 500) {
-  return NextResponse.json(
-    {
-      success: false,
-      error: message,
-      timestamp: new Date().toISOString()
-    },
-    { status }
-  );
-}
-
-// Função auxiliar para criar resposta de sucesso
-function criarRespostaSucesso<T>(data: T, status: number = 200) {
-  return NextResponse.json(
-    {
-      success: true,
-      data,
-      timestamp: new Date().toISOString()
-    },
-    { status }
-  );
-}
-
-// Schema removido - não utilizado nesta rota
-
-// GET /api/usuarios - Listar usuários
+/**
+ * GET /api/usuarios
+ * Lista usuários com filtros, paginação e ordenação
+ */
 export async function GET(request: NextRequest) {
   try {
-    // Verificar autenticação
     const session = await auth();
+    
     if (!session?.user) {
-      return criarRespostaErro(MENSAGENS_ERRO_USUARIO.NAO_AUTORIZADO, 401);
+      return ApiResponseUtils.unauthorized(USER_ERROR_MESSAGES.NAO_AUTORIZADO);
     }
 
-    const usuarioLogado = {
-      id: session.user.id!,
-      tipoUsuario: session.user.tipoUsuario as TipoUsuario
-    };
-
-    // Verificar permissões básicas
-    const podeGerenciarUsuarios = usuarioLogado.tipoUsuario === 'ADMIN';
-    const podeGerenciarAtendentes = ['ADMIN', 'SUPERVISOR'].includes(usuarioLogado.tipoUsuario);
-    
-    if (!podeGerenciarUsuarios && !podeGerenciarAtendentes) {
-      return criarRespostaErro(MENSAGENS_ERRO_USUARIO.PERMISSAO_NEGADA, 403);
+    // Verificar permissões (apenas Admin e Supervisor)
+    if (!['ADMIN', 'SUPERVISOR'].includes(session.user.userType)) {
+      return ApiResponseUtils.forbidden(USER_ERROR_MESSAGES.PERMISSAO_NEGADA);
     }
 
-    // Extrair e validar parâmetros da URL
+    // Parsear parâmetros da query
     const { searchParams } = new URL(request.url);
-    const params = {
-      busca: searchParams.get('busca') || undefined,
-      tipoUsuario: searchParams.get('tipoUsuario') as TipoUsuario | undefined,
-      ativo: searchParams.get('ativo') ? searchParams.get('ativo') === 'true' : undefined,
-      supervisorId: searchParams.get('supervisorId') || undefined,
-      pagina: parseInt(searchParams.get('pagina') || '1'),
-      limite: parseInt(searchParams.get('limite') || '10'),
-      ordenacao: searchParams.get('ordenacao') || 'nome',
-      direcao: (searchParams.get('direcao') || 'asc') as 'asc' | 'desc'
-    };
+    const pagina = parseInt(searchParams.get('pagina') || '1');
+    const limite = parseInt(searchParams.get('limite') || '10');
+    const ordenacao = searchParams.get('ordenacao') || 'nome';
+    const direcao = searchParams.get('direcao') || 'asc';
+    const busca = searchParams.get('busca') || undefined;
+    const userType = searchParams.get('userType') || undefined;
+    const ativo = searchParams.get('ativo') || undefined;
+    const supervisorId = searchParams.get('supervisorId') || undefined;
 
-    // Validar parâmetros
-    const validacao = validarFiltrosUsuario(params);
-    if (!validacao.success) {
-      return criarRespostaErro(
-        `Parâmetros inválidos: ${validacao.error.errors[0]?.message}`,
-        400
-      );
+    // Validar filtros
+    const validacaoFiltros = validarFiltrosUsuario({
+      pagina,
+      limite,
+      ordenacao,
+      direcao,
+      busca,
+      userType,
+      ativo: ativo !== undefined ? ativo === 'true' : undefined,
+      supervisorId
+    });
+
+    if (!validacaoFiltros.success) {
+      return ApiResponseUtils.badRequest('Dados inválidos', JSON.stringify(validacaoFiltros.error.flatten()));
     }
 
-    // Preparar parâmetros para o serviço
-    const buscarParams: BuscarUsuariosParams = {
-      filtros: {
-        busca: params.busca,
-        tipoUsuario: params.tipoUsuario,
-        ativo: params.ativo,
-        supervisorId: params.supervisorId
-      },
-      ordenacao: {
-        coluna: params.ordenacao,
-        direcao: params.direcao
-      },
-      paginacao: {
-        paginaAtual: params.pagina,
-        itensPorPagina: params.limite,
-        totalPaginas: 1,
-        totalItens: 0,
-        temProximaPagina: false,
-        temPaginaAnterior: false
-      },
-      incluirInativos: params.ativo === undefined,
-      incluirContadores: true
+    const filtros: FiltrosUsuario = validacaoFiltros.data;
+
+    // Construir query Prisma
+    const where: any = {
+      // Supervisor só pode ver atendentes
+      ...(session.user.userType === 'SUPERVISOR' && {
+        userType: 'ATENDENTE'
+      }),
+      // Filtros opcionais
+      ...(filtros.busca && {
+        OR: [
+          { nome: { contains: filtros.busca, mode: 'insensitive' } },
+          { email: { contains: filtros.busca, mode: 'insensitive' } }
+        ]
+      }),
+      ...(filtros.userType && { userType: filtros.userType }),
+      ...(filtros.ativo !== undefined && { ativo: filtros.ativo }),
+      ...(filtros.supervisorId && { supervisorId: filtros.supervisorId })
     };
 
-    // Buscar usuários usando o serviço
-    const resultado = await UsuarioService.buscarUsuarios(buscarParams, usuarioLogado);
+    // Obter total de registros
+    const total = await prisma.usuario.count({ where });
 
-    const response: ListarUsuariosResponse = {
-      usuarios: resultado.usuarios,
-      paginacao: resultado.paginacao,
-      total: resultado.total
-    };
+    // Obter usuários
+    const usuarios = await prisma.usuario.findMany({
+      where,
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        userType: true,
+        ativo: true,
+        criadoEm: true,
+        atualizadoEm: true,
+        supervisorId: true,
+        supervisor: {
+          select: {
+            id: true,
+            nome: true
+          }
+        },
+        _count: {
+          select: {
+            supervisoes: true,
+            avaliacoesFeitas: true,
+            avaliacoesRecebidas: true
+          }
+        }
+      },
+      orderBy: {
+        [filtros.ordenacao]: filtros.direcao
+      },
+      skip: (filtros.pagina - 1) * filtros.limite,
+      take: filtros.limite
+    });
 
-    return criarRespostaSucesso(response);
+    // Criar resposta paginada
+    const resposta = createPaginatedResponse<UsuarioResponse>(
+      usuarios as UsuarioResponse[],
+      total,
+      filtros.pagina,
+      filtros.limite
+    );
+
+    return ApiResponseUtils.success(resposta, 200);
   } catch (error) {
-    logError('Erro na API GET /usuarios', error);
-    
-    if (error instanceof Error && 'statusCode' in error) {
-      return criarRespostaErro(error.message, (error as any).statusCode);
-    }
-    
-    return criarRespostaErro(MENSAGENS_ERRO_USUARIO.ERRO_INTERNO, 500);
+    logError('Erro ao listar usuários', error);
+    return ApiResponseUtils.internalError(USER_ERROR_MESSAGES.ERRO_INTERNO);
   }
 }
 
-// POST /api/usuarios - Criar usuário
+/**
+ * POST /api/usuarios
+ * Cria um novo usuário
+ */
 export async function POST(request: NextRequest) {
   try {
-    // Verificar autenticação
     const session = await auth();
+    
     if (!session?.user) {
-      return criarRespostaErro(MENSAGENS_ERRO_USUARIO.NAO_AUTORIZADO, 401);
+      return ApiResponseUtils.unauthorized(USER_ERROR_MESSAGES.NAO_AUTORIZADO);
     }
 
-    const usuarioLogado = {
-      id: session.user.id!,
-      tipoUsuario: session.user.tipoUsuario as TipoUsuario
-    };
-
-    // Verificar permissões - apenas ADMIN pode criar usuários
-    if (usuarioLogado.tipoUsuario !== 'ADMIN') {
-      return criarRespostaErro(MENSAGENS_ERRO_USUARIO.PERMISSAO_NEGADA, 403);
+    // Verificar permissões (apenas Admin)
+    if (session.user.userType !== 'ADMIN') {
+      return ApiResponseUtils.forbidden(USER_ERROR_MESSAGES.PERMISSAO_NEGADA);
     }
 
-    // Extrair e validar dados do corpo da requisição
-    let body: CriarUsuarioRequest;
-    try {
-      body = await request.json();
-    } catch {
-      return criarRespostaErro('Corpo da requisição inválido', 400);
-    }
-
-    // Validar dados usando Zod
+    const body = await request.json();
     const validacao = validarCriarUsuario(body);
+
     if (!validacao.success) {
-      return criarRespostaErro(
-        `Dados inválidos: ${validacao.error.errors[0]?.message}`,
-        400
-      );
+      return ApiResponseUtils.badRequest('Dados inválidos', JSON.stringify(validacao.error.flatten()));
     }
 
-    // Criar usuário usando o serviço
-    const novoUsuario = await UsuarioService.criar(validacao.data, usuarioLogado);
+    const dadosValidados: CriarUsuarioData = validacao.data;
 
-    const response: MutarUsuarioResponse = {
-      usuario: novoUsuario,
-      message: 'Usuário criado com sucesso'
-    };
+    // Verificar permissões de negócio
+    const podeCriar = validarRegrasNegocio.podeGerenciarUsuario(
+      session.user.userType as any,
+      dadosValidados.userType
+    );
 
-    return criarRespostaSucesso(response, 201);
+    if (!podeCriar) {
+      return ApiResponseUtils.forbidden('Permissão negada para criar este tipo de usuário.');
+    }
+
+    // Verificar se email já existe
+    const emailExistente = await prisma.usuario.findUnique({
+      where: { email: dadosValidados.email }
+    });
+
+    if (emailExistente) {
+      return ApiResponseUtils.badRequest(USER_ERROR_MESSAGES.EMAIL_JA_EXISTE);
+    }
+
+    // Hash da senha
+    const senhaHash = await hashSenha(dadosValidados.senha);
+
+    // Criar usuário
+    const usuario = await prisma.usuario.create({
+      data: {
+        nome: dadosValidados.nome,
+        email: dadosValidados.email,
+        senha: senhaHash,
+        userType: dadosValidados.userType,
+        ativo: dadosValidados.ativo,
+        supervisorId: dadosValidados.supervisorId
+      },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        userType: true,
+        ativo: true,
+        criadoEm: true,
+        atualizadoEm: true,
+        supervisorId: true,
+        supervisor: {
+          select: {
+            id: true,
+            nome: true
+          }
+        },
+        _count: {
+          select: {
+            supervisoes: true,
+            avaliacoesFeitas: true,
+            avaliacoesRecebidas: true
+          }
+        }
+      }
+    });
+
+    return ApiResponseUtils.success(
+      { usuario, message: 'Usuário criado com sucesso!' },
+      201
+    );
   } catch (error) {
-    logError('Erro na API POST /usuarios', error);
-    
-    if (error instanceof Error && 'statusCode' in error) {
-      return criarRespostaErro(error.message, (error as any).statusCode);
-    }
-    
-    return criarRespostaErro(MENSAGENS_ERRO_USUARIO.ERRO_INTERNO, 500);
+    logError('Erro ao criar usuário', error);
+    return ApiResponseUtils.internalError(USER_ERROR_MESSAGES.ERRO_INTERNO);
   }
 }

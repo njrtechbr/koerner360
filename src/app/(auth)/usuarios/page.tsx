@@ -45,7 +45,7 @@ const USUARIO_SELECT_FIELDS = {
   id: true,
   nome: true,
   email: true,
-  tipoUsuario: true,
+  userType: true,
   ativo: true,
   criadoEm: true,
   atualizadoEm: true,
@@ -99,7 +99,7 @@ interface Usuario {
   id: string;
   nome: string;
   email: string;
-  tipoUsuario: 'ADMIN' | 'SUPERVISOR' | 'ATENDENTE' | 'CONSULTOR';
+  userType: 'ADMIN' | 'SUPERVISOR' | 'ATENDENTE' | 'CONSULTOR';
   ativo: boolean;
   criadoEm: Date;
   atualizadoEm: Date;

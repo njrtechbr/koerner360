@@ -1,185 +1,233 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { UsuarioService } from '@/lib/services/usuario-service';
+import { prisma } from '@/lib/prisma';
+import { ApiResponseUtils } from '@/lib/utils/api-response';
 import {
   validarAtualizarUsuario,
-  type TipoUsuario,
-  type AtualizarUsuarioRequest,
-  type ObterUsuarioResponse,
-  type MutarUsuarioResponse,
-  MENSAGENS_ERRO_USUARIO
+  validarRegrasNegocio,
+  USER_ERROR_MESSAGES,
+  type AtualizarUsuarioData
 } from '@/lib/validations/usuario';
 import { logError } from '@/lib/error-utils';
+import { NextRequest } from 'next/server';
 
-// Funções auxiliares para respostas padronizadas
-function criarRespostaSucesso<T>(data: T, status = 200): NextResponse {
-  return NextResponse.json({
-    success: true,
-    data,
-    timestamp: new Date().toISOString()
-  }, { status });
-}
-
-function criarRespostaErro(message: string, status = 400): NextResponse {
-  return NextResponse.json({
-    success: false,
-    error: message,
-    timestamp: new Date().toISOString()
-  }, { status });
-}
-
-// GET /api/usuarios/[id] - Obter usuário por ID
+/**
+ * GET /api/usuarios/[id]
+ * Obtém um usuário específico
+ */
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // Verificar autenticação
     const session = await auth();
+    
     if (!session?.user) {
-      return criarRespostaErro(MENSAGENS_ERRO_USUARIO.NAO_AUTORIZADO, 401);
+      return ApiResponseUtils.unauthorized(USER_ERROR_MESSAGES.NAO_AUTORIZADO);
     }
 
-    const usuarioLogado = {
-      id: session.user.id!,
-      tipoUsuario: session.user.tipoUsuario as TipoUsuario
-    };
+    // Verificar se o usuário tem permissão para ver este usuário específico
+    // Admin pode ver todos, Supervisor pode ver Atendentes
+    const usuarioAlvo = await prisma.usuario.findUnique({
+      where: { id: params.id },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        userType: true,
+        ativo: true,
+        criadoEm: true,
+        atualizadoEm: true,
+        supervisorId: true,
+        supervisor: {
+          select: {
+            id: true,
+            nome: true
+          }
+        }
+      }
+    });
 
-    const { id } = params;
-
-    // Validar ID
-    if (!id || typeof id !== 'string') {
-      return criarRespostaErro('ID do usuário é obrigatório', 400);
+    if (!usuarioAlvo) {
+      return ApiResponseUtils.badRequest(USER_ERROR_MESSAGES.USUARIO_NAO_ENCONTRADO);
     }
 
-    // Buscar usuário usando o serviço
-    const usuario = await UsuarioService.obterPorId(id, usuarioLogado);
+    // Verificar permissões de negócio
+    const podeVer = validarRegrasNegocio.podeGerenciarUsuario(
+      session.user.userType as any,
+      usuarioAlvo.userType as any
+    );
 
-    if (!usuario) {
-      return criarRespostaErro(MENSAGENS_ERRO_USUARIO.USUARIO_NAO_ENCONTRADO, 404);
+    if (!podeVer) {
+      return ApiResponseUtils.forbidden(USER_ERROR_MESSAGES.PERMISSAO_NEGADA);
     }
 
-    const response: ObterUsuarioResponse = {
-      usuario
-    };
-
-    return criarRespostaSucesso(response);
+    return ApiResponseUtils.success({ usuario: usuarioAlvo }, 200);
   } catch (error) {
-    logError('Erro na API GET /usuarios/[id]', error);
-    
-    if (error instanceof Error && 'statusCode' in error) {
-      return criarRespostaErro(error.message, (error as any).statusCode);
-    }
-    
-    return criarRespostaErro(MENSAGENS_ERRO_USUARIO.ERRO_INTERNO, 500);
+    logError('Erro ao obter usuário', error);
+    return ApiResponseUtils.internalError(USER_ERROR_MESSAGES.ERRO_INTERNO);
   }
 }
 
-// PUT /api/usuarios/[id] - Atualizar usuário
+/**
+ * PUT /api/usuarios/[id]
+ * Atualiza um usuário
+ */
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // Verificar autenticação
     const session = await auth();
+    
     if (!session?.user) {
-      return criarRespostaErro(MENSAGENS_ERRO_USUARIO.NAO_AUTORIZADO, 401);
+      return ApiResponseUtils.unauthorized(USER_ERROR_MESSAGES.NAO_AUTORIZADO);
     }
 
-    const usuarioLogado = {
-      id: session.user.id!,
-      tipoUsuario: session.user.tipoUsuario as TipoUsuario
-    };
+    const body = await request.json();
+    const validacao = validarAtualizarUsuario({ ...body, id: params.id });
 
-    const { id } = params;
-
-    // Validar ID
-    if (!id || typeof id !== 'string') {
-      return criarRespostaErro('ID do usuário é obrigatório', 400);
-    }
-
-    // Extrair e validar dados do corpo da requisição
-    let body: AtualizarUsuarioRequest;
-    try {
-      body = await request.json();
-    } catch {
-      return criarRespostaErro('Corpo da requisição inválido', 400);
-    }
-
-    // Validar dados usando Zod
-    const validacao = validarAtualizarUsuario(body);
     if (!validacao.success) {
-      return criarRespostaErro(
-        `Dados inválidos: ${validacao.error.errors[0]?.message}`,
-        400
-      );
+      return ApiResponseUtils.badRequest('Dados inválidos', JSON.stringify(validacao.error.flatten()));
     }
 
-    // Atualizar usuário usando o serviço
-    const usuarioAtualizado = await UsuarioService.atualizar(
-      id,
-      validacao.data,
-      usuarioLogado
+    const dadosValidados = validacao.data;
+
+    // Verificar permissões de negócio
+    const podeEditar = validarRegrasNegocio.podeEditarUsuario(
+      session.user.userType as any,
+      dadosValidados.userType
     );
 
-    const response: MutarUsuarioResponse = {
-      usuario: usuarioAtualizado,
-      message: 'Usuário atualizado com sucesso'
-    };
-
-    return criarRespostaSucesso(response);
-  } catch (error) {
-    logError('Erro na API PUT /usuarios/[id]', error);
-    
-    if (error instanceof Error && 'statusCode' in error) {
-      return criarRespostaErro(error.message, (error as any).statusCode);
+    if (!podeEditar) {
+      return ApiResponseUtils.forbidden('Permissão negada para editar este usuário.');
     }
-    
-    return criarRespostaErro(MENSAGENS_ERRO_USUARIO.ERRO_INTERNO, 500);
+
+    // Atualizar usuário
+    const usuario = await prisma.usuario.update({
+      where: { id: params.id },
+      data: {
+        nome: dadosValidados.nome,
+        email: dadosValidados.email,
+        userType: dadosValidados.userType,
+        ativo: dadosValidados.ativo,
+        supervisorId: dadosValidados.supervisorId,
+        // Só atualizar senha se fornecida
+        ...(dadosValidados.senha && {
+          senha: await hashSenha(dadosValidados.senha)
+        })
+      },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        userType: true,
+        ativo: true,
+        criadoEm: true,
+        atualizadoEm: true,
+        supervisorId: true,
+        supervisor: {
+          select: {
+            id: true,
+            nome: true
+          }
+        },
+        _count: {
+          select: {
+            supervisoes: true,
+            avaliacoesFeitas: true,
+            avaliacoesRecebidas: true
+          }
+        }
+      }
+    });
+
+    return ApiResponseUtils.success(
+      { usuario, message: 'Usuário atualizado com sucesso!' },
+      200
+    );
+  } catch (error) {
+    logError('Erro ao atualizar usuário', error);
+    return ApiResponseUtils.internalError(USER_ERROR_MESSAGES.ERRO_INTERNO);
   }
 }
 
-// DELETE /api/usuarios/[id] - Desativar usuário
+/**
+ * DELETE /api/usuarios/[id]
+ * Exclui um usuário (soft delete)
+ */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // Verificar autenticação
     const session = await auth();
+    
     if (!session?.user) {
-      return criarRespostaErro(MENSAGENS_ERRO_USUARIO.NAO_AUTORIZADO, 401);
+      return ApiResponseUtils.unauthorized(USER_ERROR_MESSAGES.NAO_AUTORIZADO);
     }
 
-    const usuarioLogado = {
-      id: session.user.id!,
-      tipoUsuario: session.user.tipoUsuario as TipoUsuario
-    };
+    // Verificar permissões de negócio
+    const usuarioAlvo = await prisma.usuario.findUnique({
+      where: { id: params.id },
+      select: { userType: true }
+    });
 
-    const { id } = params;
-
-    // Validar ID
-    if (!id || typeof id !== 'string') {
-      return criarRespostaErro('ID do usuário é obrigatório', 400);
+    if (!usuarioAlvo) {
+      return ApiResponseUtils.badRequest(USER_ERROR_MESSAGES.USUARIO_NAO_ENCONTRADO);
     }
 
-    // Desativar usuário usando o serviço
-    const usuarioDesativado = await UsuarioService.desativar(id, usuarioLogado);
+    const podeExcluir = validarRegrasNegocio.podeGerenciarUsuario(
+      session.user.userType as any,
+      usuarioAlvo.userType as any
+    );
 
-    const response: MutarUsuarioResponse = {
-      usuario: usuarioDesativado,
-      message: 'Usuário desativado com sucesso'
-    };
+    if (!podeExcluir) {
+      return ApiResponseUtils.forbidden('Permissão negada para excluir este usuário.');
+    }
 
-    return criarRespostaSucesso(response);
+    // Soft delete
+    const usuario = await prisma.usuario.update({
+      where: { id: params.id },
+      data: { ativo: false },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        userType: true,
+        ativo: true,
+        criadoEm: true,
+        atualizadoEm: true,
+        supervisorId: true,
+        supervisor: {
+          select: {
+            id: true,
+            nome: true
+          }
+        },
+        _count: {
+          select: {
+            supervisoes: true,
+            avaliacoesFeitas: true,
+            avaliacoesRecebidas: true
+          }
+        }
+      }
+    });
+
+    return ApiResponseUtils.success(
+      { usuario, message: 'Usuário excluído com sucesso!' },
+      200
+    );
   } catch (error) {
-    logError('Erro na API DELETE /usuarios/[id]', error);
-    
-    if (error instanceof Error && 'statusCode' in error) {
-      return criarRespostaErro(error.message, (error as any).statusCode);
-    }
-    
-    return criarRespostaErro(MENSAGENS_ERRO_USUARIO.ERRO_INTERNO, 500);
+    logError('Erro ao excluir usuário', error);
+    return ApiResponseUtils.internalError(USER_ERROR_MESSAGES.ERRO_INTERNO);
   }
+}
+
+// Função auxiliar para hash de senha (não estava importada no código original)
+async function hashSenha(senha: string): Promise<string> {
+  // Import dinâmico para bcryptjs
+  const bcrypt = await import('bcryptjs');
+  const saltRounds = 12;
+  return bcrypt.hash(senha, saltRounds);
 }

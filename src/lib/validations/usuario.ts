@@ -246,7 +246,7 @@ export const COLUNAS_ORDENACAO = ['nome', 'email', 'userType', 'ativo', 'criadoE
 export const DIRECOES_ORDENACAO = ['asc', 'desc'] as const;
 
 // Mensagens de erro padronizadas
-export const MENSAGENS_ERRO_USUARIO = {
+export const USER_ERROR_MESSAGES = {
   NAO_AUTORIZADO: 'Usuário não autorizado.',
   ERRO_INTERNO: 'Ocorreu um erro interno no servidor.',
   USUARIO_NAO_ENCONTRADO: 'Usuário não encontrado.',

@@ -2,7 +2,16 @@
  * Utilitários para gerenciamento de autenticação e sessão
  */
 
+import bcrypt from "bcryptjs";
 import { logError } from '@/lib/error-utils';
+
+/**
+ * Função para hash de senha
+ */
+export async function hashSenha(senha: string): Promise<string> {
+  const saltRounds = 12;
+  return bcrypt.hash(senha, saltRounds);
+}
 
 /**
  * Lista de cookies do NextAuth que devem ser limpos

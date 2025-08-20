@@ -255,3 +255,6 @@ O sistema suporta:
 ---
 
 **Koerner 360** representa uma solução completa e moderna para gestão de feedback e avaliações 360°, construída com as melhores práticas de desenvolvimento e tecnologias de ponta.
+
+
+Nunca fazer npm run dev, sempre fazer npm run build antes de deploy.

@@ -4,7 +4,7 @@ import { UsuarioService } from '@/lib/services/usuario-service';
 import {
   type TipoUsuario,
   type EstatisticasUsuarios,
-  MENSAGENS_ERRO_USUARIO
+  USER_ERROR_MESSAGES
 } from '@/lib/validations/usuario';
 import { logError } from '@/lib/error-utils';
 
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     // Verificar autenticação
     const session = await auth();
     if (!session?.user) {
-      return criarRespostaErro(MENSAGENS_ERRO_USUARIO.NAO_AUTORIZADO, 401);
+      return criarRespostaErro(USER_ERROR_MESSAGES.NAO_AUTORIZADO, 401);
     }
 
     const usuarioLogado = {
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
 
     // Verificar permissões - apenas ADMIN e SUPERVISOR podem acessar
     if (!['ADMIN', 'SUPERVISOR'].includes(usuarioLogado.tipoUsuario)) {
-      return criarRespostaErro(MENSAGENS_ERRO_USUARIO.PERMISSAO_NEGADA, 403);
+      return criarRespostaErro(USER_ERROR_MESSAGES.PERMISSAO_NEGADA, 403);
     }
 
     // Obter estatísticas usando o serviço
@@ -59,6 +59,6 @@ export async function GET(request: NextRequest) {
       return criarRespostaErro(error.message, (error as any).statusCode);
     }
     
-    return criarRespostaErro(MENSAGENS_ERRO_USUARIO.ERRO_INTERNO, 500);
+    return criarRespostaErro(USER_ERROR_MESSAGES.ERRO_INTERNO, 500);
   }
 }

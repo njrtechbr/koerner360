@@ -1,9 +1,9 @@
 import { prisma } from '@/lib/prisma';
-import type { TipoUsuario } from '@prisma/client';
+import type { UserType } from '@prisma/client';
 
 export interface UsuarioFiltros {
   busca?: string;
-  tipoUsuario?: TipoUsuario;
+  tipoUsuario?: UserType;
   ativo?: boolean;
   supervisorId?: string;
 }
@@ -19,7 +19,7 @@ export interface UsuarioCompleto {
   id: string;
   nome: string;
   email: string;
-  tipoUsuario: TipoUsuario;
+  userType: UserType;
   ativo: boolean;
   criadoEm: Date;
   atualizadoEm: Date;
@@ -56,7 +56,7 @@ export class UsuariosService {
     id: true,
     nome: true,
     email: true,
-    tipoUsuario: true,
+    userType: true,
     ativo: true,
     criadoEm: true,
     atualizadoEm: true,
@@ -138,7 +138,7 @@ export class UsuariosService {
 
     // Filtro por tipo de usuário
     if (filtros.tipoUsuario) {
-      where.tipoUsuario = filtros.tipoUsuario;
+      where.userType = filtros.tipoUsuario;
     }
 
     // Filtro por status ativo
@@ -186,10 +186,10 @@ export class UsuariosService {
       total: usuarios.length,
       usuariosAtivos: usuarios.filter(u => u.ativo).length,
       usuariosInativos: usuarios.filter(u => !u.ativo).length,
-      admins: usuarios.filter(u => u.tipoUsuario === 'ADMIN').length,
-      supervisores: usuarios.filter(u => u.tipoUsuario === 'SUPERVISOR').length,
-      atendentes: usuarios.filter(u => u.tipoUsuario === 'ATENDENTE').length,
-      consultores: usuarios.filter(u => u.tipoUsuario === 'CONSULTOR').length,
+      admins: usuarios.filter(u => u.userType === 'ADMIN').length,
+      supervisores: usuarios.filter(u => u.userType === 'SUPERVISOR').length,
+      atendentes: usuarios.filter(u => u.userType === 'ATENDENTE').length,
+      consultores: usuarios.filter(u => u.userType === 'CONSULTOR').length,
     };
   }
 
@@ -199,7 +199,7 @@ export class UsuariosService {
   static validarParametrosPaginacao(searchParams: Record<string, unknown>): UsuarioPaginacao {
     const page = Math.max(1, parseInt(searchParams.pagina || '1'));
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.limite || '10')));
-    const ordenacao = ['nome', 'email', 'tipoUsuario', 'ativo', 'criadoEm'].includes(searchParams.ordenacao) 
+    const ordenacao = ['nome', 'email', 'userType', 'ativo', 'criadoEm'].includes(searchParams.ordenacao) 
       ? searchParams.ordenacao 
       : 'nome';
     const direcao = searchParams.direcao === 'desc' ? 'desc' : 'asc';
@@ -218,7 +218,7 @@ export class UsuariosService {
     }
 
     if (searchParams.tipoUsuario && ['ADMIN', 'SUPERVISOR', 'ATENDENTE', 'CONSULTOR'].includes(searchParams.tipoUsuario)) {
-      filtros.tipoUsuario = searchParams.tipoUsuario as TipoUsuario;
+      filtros.tipoUsuario = searchParams.tipoUsuario as UserType;
     }
 
     if (searchParams.ativo !== undefined && searchParams.ativo !== '') {

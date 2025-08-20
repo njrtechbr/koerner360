@@ -1,70 +1,75 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { UsuarioService } from '@/lib/services/usuario-service';
-import {
-  type TipoUsuario,
-  type MutarUsuarioResponse,
-  MENSAGENS_ERRO_USUARIO
-} from '@/lib/validations/usuario';
+import { prisma } from '@/lib/prisma';
+import { ApiResponseUtils } from '@/lib/utils/api-response';
+import { validarRegrasNegocio, USER_ERROR_MESSAGES } from '@/lib/validations/usuario';
 import { logError } from '@/lib/error-utils';
+import { NextRequest } from 'next/server';
 
-// Funções auxiliares para respostas padronizadas
-function criarRespostaSucesso<T>(data: T, status = 200): NextResponse {
-  return NextResponse.json({
-    success: true,
-    data,
-    timestamp: new Date().toISOString()
-  }, { status });
-}
-
-function criarRespostaErro(message: string, status = 400): NextResponse {
-  return NextResponse.json({
-    success: false,
-    error: message,
-    timestamp: new Date().toISOString()
-  }, { status });
-}
-
-// POST /api/usuarios/[id]/ativar - Ativar usuário
-export async function POST(
+/**
+ * PATCH /api/usuarios/[id]/ativar
+ * Ativa um usuário
+ */
+export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // Verificar autenticação
+    // Verificar autenticação e permissões
     const session = await auth();
+    
     if (!session?.user) {
-      return criarRespostaErro(MENSAGENS_ERRO_USUARIO.NAO_AUTORIZADO, 401);
+      return ApiResponseUtils.unauthorized(USER_ERROR_MESSAGES.NAO_AUTORIZADO);
     }
 
-    const usuarioLogado = {
-      id: session.user.id!,
-      tipoUsuario: session.user.tipoUsuario as TipoUsuario
-    };
+    // Verificar permissões de negócio
+    const podeAtivar = validarRegrasNegocio.podeDesativarUsuario(
+      session.user.userType as any,
+      session.user.userType as any // UserType do usuário a ser ativado (não disponível aqui)
+    );
 
-    const { id } = params;
-
-    // Validar ID
-    if (!id || typeof id !== 'string') {
-      return criarRespostaErro('ID do usuário é obrigatório', 400);
+    if (!podeAtivar) {
+      return ApiResponseUtils.forbidden('Permissão negada para ativar este usuário.');
     }
 
-    // Ativar usuário usando o serviço
-    const usuarioAtivado = await UsuarioService.ativar(id, usuarioLogado);
+    // Atualizar usuário
+    const usuario = await prisma.usuario.update({
+      where: { id: params.id },
+      data: { ativo: true },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        userType: true,
+        ativo: true,
+        criadoEm: true,
+        atualizadoEm: true,
+        supervisorId: true,
+        supervisor: {
+          select: {
+            id: true,
+            nome: true
+          }
+        },
+        _count: {
+          select: {
+            supervisoes: true,
+            avaliacoesFeitas: true,
+            avaliacoesRecebidas: true
+          }
+        }
+      }
+    });
 
-    const response: MutarUsuarioResponse = {
-      usuario: usuarioAtivado,
-      message: 'Usuário ativado com sucesso'
-    };
+    if (!usuario) {
+      return ApiResponseUtils.badRequest(USER_ERROR_MESSAGES.USUARIO_NAO_ENCONTRADO);
+    }
 
-    return criarRespostaSucesso(response);
+    return ApiResponseUtils.success(
+      { usuario, message: 'Usuário ativado com sucesso!' },
+      200
+    );
   } catch (error) {
-    logError('Erro na API POST /usuarios/[id]/ativar', error);
-    
-    if (error instanceof Error && 'statusCode' in error) {
-      return criarRespostaErro(error.message, (error as any).statusCode);
-    }
-    
-    return criarRespostaErro(MENSAGENS_ERRO_USUARIO.ERRO_INTERNO, 500);
+    logError('Erro ao ativar usuário', error);
+    return ApiResponseUtils.internalError(USER_ERROR_MESSAGES.ERRO_INTERNO);
   }
 }

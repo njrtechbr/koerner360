@@ -2,6 +2,50 @@ import { NextResponse } from 'next/server'
 import { ZodError } from 'zod'
 
 /**
+ * Interface para paginação
+ */
+export interface Paginacao {
+  paginaAtual: number
+  totalPaginas: number
+  totalItens: number
+  itensPorPagina: number
+  temProximaPagina: boolean
+  temPaginaAnterior: boolean
+}
+
+/**
+ * Interface para resposta paginada
+ */
+export interface RespostaPaginada<T> {
+  itens: T[]
+  paginacao: Paginacao
+}
+
+/**
+ * Função utilitária para criar resposta paginada
+ */
+export function createPaginatedResponse<T>(
+  itens: T[],
+  totalItens: number,
+  pagina: number,
+  limite: number
+): RespostaPaginada<T> {
+  const totalPaginas = Math.ceil(totalItens / limite)
+  
+  return {
+    itens,
+    paginacao: {
+      paginaAtual: pagina,
+      totalPaginas,
+      totalItens,
+      itensPorPagina: limite,
+      temProximaPagina: pagina < totalPaginas,
+      temPaginaAnterior: pagina > 1
+    }
+  }
+}
+
+/**
  * Utilitário para padronizar respostas da API
  */
 export class ApiResponseUtils {

@@ -1,64 +1,44 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { UsuarioService } from '@/lib/services/usuario-service';
-import {
-  type TipoUsuario,
-  type SupervisorDisponivel,
-  MENSAGENS_ERRO_USUARIO
-} from '@/lib/validations/usuario';
+import { prisma } from '@/lib/prisma';
+import { ApiResponseUtils } from '@/lib/utils/api-response';
+import { USER_ERROR_MESSAGES } from '@/lib/validations/usuario';
 import { logError } from '@/lib/error-utils';
+import { NextRequest } from 'next/server';
 
-// Funções auxiliares para respostas padronizadas
-function criarRespostaSucesso<T>(data: T, status = 200): NextResponse {
-  return NextResponse.json({
-    success: true,
-    data,
-    timestamp: new Date().toISOString()
-  }, { status });
-}
-
-function criarRespostaErro(message: string, status = 400): NextResponse {
-  return NextResponse.json({
-    success: false,
-    error: message,
-    timestamp: new Date().toISOString()
-  }, { status });
-}
-
-// GET /api/usuarios/supervisores - Buscar supervisores disponíveis
+/**
+ * GET /api/usuarios/supervisores
+ * Lista supervisores disponíveis
+ */
 export async function GET(request: NextRequest) {
   try {
-    // Verificar autenticação
     const session = await auth();
+    
     if (!session?.user) {
-      return criarRespostaErro(MENSAGENS_ERRO_USUARIO.NAO_AUTORIZADO, 401);
+      return ApiResponseUtils.unauthorized(USER_ERROR_MESSAGES.NAO_AUTORIZADO);
     }
 
-    const usuarioLogado = {
-      id: session.user.id!,
-      tipoUsuario: session.user.tipoUsuario as TipoUsuario
-    };
-
-    // Verificar permissões - apenas ADMIN e SUPERVISOR podem acessar
-    if (!['ADMIN', 'SUPERVISOR'].includes(usuarioLogado.tipoUsuario)) {
-      return criarRespostaErro(MENSAGENS_ERRO_USUARIO.PERMISSAO_NEGADA, 403);
+    // Verificar permissões (apenas Admin)
+    if (session.user.userType !== 'ADMIN') {
+      return ApiResponseUtils.forbidden(USER_ERROR_MESSAGES.PERMISSAO_NEGADA);
     }
 
-    // Buscar supervisores usando o serviço
-    const supervisores = await UsuarioService.buscarSupervisores(usuarioLogado);
+    const supervisores = await prisma.usuario.findMany({
+      where: {
+        userType: 'SUPERVISOR',
+        ativo: true
+      },
+      select: {
+        id: true,
+        nome: true
+      },
+      orderBy: {
+        nome: 'asc'
+      }
+    });
 
-    const response: { supervisores: SupervisorDisponivel[] } = {
-      supervisores
-    };
-
-    return criarRespostaSucesso(response);
+    return ApiResponseUtils.success(supervisores, 200);
   } catch (error) {
-    logError('Erro na API GET /usuarios/supervisores', error);
-    
-    if (error instanceof Error && 'statusCode' in error) {
-      return criarRespostaErro(error.message, (error as any).statusCode);
-    }
-    
-    return criarRespostaErro(MENSAGENS_ERRO_USUARIO.ERRO_INTERNO, 500);
+    logError('Erro ao listar supervisores', error);
+    return ApiResponseUtils.internalError(USER_ERROR_MESSAGES.ERRO_INTERNO);
   }
 }

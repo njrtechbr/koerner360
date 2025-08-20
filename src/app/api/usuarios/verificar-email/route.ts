@@ -1,89 +1,53 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { UsuarioService } from '@/lib/services/usuario-service';
-import {
-  type TipoUsuario,
-  type ValidacaoEmailUnico,
-  MENSAGENS_ERRO_USUARIO
-} from '@/lib/validations/usuario';
+import { prisma } from '@/lib/prisma';
+import { ApiResponseUtils } from '@/lib/utils/api-response';
+import { USER_ERROR_MESSAGES } from '@/lib/validations/usuario';
 import { logError } from '@/lib/error-utils';
-import { z } from 'zod';
+import { NextRequest } from 'next/server';
 
-// Schema para validar parâmetros de consulta
-const verificarEmailSchema = z.object({
-  email: z.string().email('Email inválido'),
-  usuarioId: z.string().optional()
-});
-
-// Funções auxiliares para respostas padronizadas
-function criarRespostaSucesso<T>(data: T, status = 200): NextResponse {
-  return NextResponse.json({
-    success: true,
-    data,
-    timestamp: new Date().toISOString()
-  }, { status });
-}
-
-function criarRespostaErro(message: string, status = 400): NextResponse {
-  return NextResponse.json({
-    success: false,
-    error: message,
-    timestamp: new Date().toISOString()
-  }, { status });
-}
-
-// GET /api/usuarios/verificar-email - Verificar se email é único
+/**
+ * GET /api/usuarios/verificar-email
+ * Verifica se um email é único (não está em uso por outro usuário)
+ */
 export async function GET(request: NextRequest) {
   try {
-    // Verificar autenticação
     const session = await auth();
+    
     if (!session?.user) {
-      return criarRespostaErro(MENSAGENS_ERRO_USUARIO.NAO_AUTORIZADO, 401);
+      return ApiResponseUtils.unauthorized(USER_ERROR_MESSAGES.NAO_AUTORIZADO);
     }
 
-    const usuarioLogado = {
-      id: session.user.id!,
-      tipoUsuario: session.user.tipoUsuario as TipoUsuario
-    };
-
-    // Verificar permissões - apenas ADMIN e SUPERVISOR podem verificar emails
-    if (!['ADMIN', 'SUPERVISOR'].includes(usuarioLogado.tipoUsuario)) {
-      return criarRespostaErro(MENSAGENS_ERRO_USUARIO.PERMISSAO_NEGADA, 403);
+    // Verificar permissões (apenas Admin)
+    if (session.user.userType !== 'ADMIN') {
+      return ApiResponseUtils.forbidden(USER_ERROR_MESSAGES.PERMISSAO_NEGADA);
     }
 
-    // Extrair parâmetros da URL
     const { searchParams } = new URL(request.url);
     const email = searchParams.get('email');
-    const usuarioId = searchParams.get('usuarioId') || undefined;
+    const usuarioId = searchParams.get('usuarioId');
 
-    // Validar parâmetros
-    const validacao = verificarEmailSchema.safeParse({ email, usuarioId });
-    if (!validacao.success) {
-      return criarRespostaErro(
-        `Parâmetros inválidos: ${validacao.error.errors[0]?.message}`,
-        400
-      );
+    if (!email) {
+      return ApiResponseUtils.badRequest('Email é obrigatório');
     }
 
-    // Verificar email usando o serviço
-    const resultado = await UsuarioService.verificarEmailUnico(
-      validacao.data.email,
-      validacao.data.usuarioId,
-      usuarioLogado
-    );
-
-    const response: { validacao: ValidacaoEmailUnico } = {
-      validacao: resultado
+    const where: any = {
+      email: email.toLowerCase()
     };
 
-    return criarRespostaSucesso(response);
-  } catch (error) {
-    logError('Erro na API GET /usuarios/verificar-email', error);
-    
-    if (error instanceof Error && 'statusCode' in error) {
-      return criarRespostaErro(error.message, (error as any).statusCode);
+    // Se estiver atualizando um usuário, excluí-lo da verificação
+    if (usuarioId) {
+      where.id = { not: usuarioId };
     }
-    
-    return criarRespostaErro(MENSAGENS_ERRO_USUARIO.ERRO_INTERNO, 500);
+
+    const usuarioExistente = await prisma.usuario.findFirst({
+      where
+    });
+
+    const emailUnico = !usuarioExistente;
+
+    return ApiResponseUtils.success({ emailUnico }, 200);
+  } catch (error) {
+    logError('Erro ao verificar email único', error);
+    return ApiResponseUtils.internalError(USER_ERROR_MESSAGES.ERRO_INTERNO);
   }
 }
